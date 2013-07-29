@@ -1,0 +1,66 @@
+import sys
+import string
+from setuptools import setup
+from setuptools.command.test import test as TestCommand
+
+class PyTest(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = ['-v', '--tb=no']
+        self.test_suite = True
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.test_args)
+        sys.exit(errno)                                                                        
+
+__version__ = (0, 1, 0)
+
+sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
+
+setup(
+    name="pdp_util",
+    description="A package supplying numerous apps for running PCIC's data server",
+    keywords="sql database opendap dods dap data science climate oceanography meteorology",
+    packages=['pdp_util'],
+    version='.'.join(str(d) for d in __version__),
+    url="http://www.pacificclimate.org/",
+    author="James Hiebert",
+    author_email="hiebert@uvic.ca",
+#    namespace_packages=['pydap', 'pydap.handlers'],
+    dependency_links = ['{0}/PyCDS@0.0.12#egg=pycds-0.0.12'.format(sw_path),
+                        '{0}/pydap.handlers.pcic@0.0.2#egg=pydap.handlers.pcic-0.0.2'.format(sw_path)],
+    install_requires=['webob',
+                      'openid2rp',
+                      'genshi',
+                      'paste',
+                      'beaker',
+                      'pillow',
+                      'pytz',
+                      'simplejson',
+                      'pycds>=0.0.12',
+                      'numpy',
+                      'python-dateutil',],
+    tests_require=['pytest',
+                   'pydap.handlers.pcic',
+                   'sqlalchemy',
+                   'BeautifulSoup',
+                   'pycds'],
+    cmdclass = {'test': PyTest},
+    zip_safe=True,
+    package_data={'pdp_util': ['pdp_util/data/alpha.png',
+                               'templates/*.html']},
+
+        classifiers='''Development Status :: 2 - Pre-Alpha
+Environment :: Console
+Environment :: Web Environment
+Intended Audience :: Developers
+Intended Audience :: Science/Research
+License :: OSI Approved :: GNU General Public License (GPL)
+Operating System :: OS Independent
+Programming Language :: Python
+Topic :: Internet
+Topic :: Internet :: WWW/HTTP :: WSGI
+Topic :: Scientific/Engineering
+Topic :: Software Development :: Libraries :: Python Modules'''.split('\n')
+)

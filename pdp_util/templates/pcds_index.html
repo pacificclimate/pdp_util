@@ -1,0 +1,78 @@
+<!-- !This file uses the Genshi template language: http://genshi.edgewall.org/wiki/Documentation/xml-templates.html -->
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/">
+    <head>
+        <title>PCIC Data Portal: $title</title>
+
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+        <link type="text/css" href="${app_root}/css/blitzer/jquery-ui-1.8.2.custom.css" rel="stylesheet" /> 
+        <link rel="stylesheet" type="text/css" media="screen" href="${app_root}/css/default.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="${app_root}/css/pcic.css" />
+        <link rel="alternate" type="application/thredds+xml" title="THREDDS Catalog" href="${root}/catalog.xml" />
+        <script type="text/javascript" src="${app_root}/js/jquery-1.4.2.min.js"></script>
+        <script type="text/javascript" src="${app_root}/js/jquery-ui-1.8.2.custom.min.js"></script>
+        <script type="text/javascript" src="${app_root}/js/jquery.hotkeys-0.7.9.min.js"></script>
+        <script type="text/javascript">
+            var root = "${root}";
+        </script>
+
+        <!-- icons from http://www.famfamfam.com/lab/icons/silk/preview.php -->
+    <script type="text/javascript" src="${app_root}/js/zebra.js"></script>
+    </head>
+
+    <body class="ui-helper-reset ui-widget">
+    <div id="wrapper">
+    <div id="header">
+    <a href="http://pacificclimate.org"><img src="${app_root}/images/banner.png" alt="PCIC Logo" /></a>
+    <div id="header-title">PCIC Data Portal</div>
+    </div>
+    <div id="header-menu">
+        <ul class="menu" style="float: left">
+        <li><a href="http://pacificclimate.org">PCIC Home</a></li>
+        <li><a href="http://pacificclimate.org/terms-of-use">Terms of Use</a></li>
+        <li><a href="http://pacificclimate.org/contact">Contact Us</a></li>
+        </ul>
+    </div>
+    <div id="login">
+      <py:if test="'beaker.session' in environ and 'email' in environ.get('beaker.session')">
+	Logged in as: ${environ.get('beaker.session')['email']} <a href="?openid_logout">Logout</a>
+      </py:if>
+    </div>
+
+        <div id="main" class="ui-corner-all ui-widget-content">
+            <h1 id="title">$title</h1>
+            <p id="uplink">
+                <span class="ui-icon ui-icon-folder-collapsed"></span>
+                <a href="../">Up one level</a>
+            </p>
+            <table>
+                <tr class="ui-widget-header">
+                    <th>${short_name}</th>
+                    <th>${long_name}</th>
+                    <th>Last modified</th>
+                </tr>
+
+                <!-- directories -->
+                <tr py:for="(name, description) in elements" class="ui-widget-content">
+                    <td>
+                        <span class="ui-icon ui-icon-folder-collapsed"></span>
+                        <a href="./${name}/">${name}/</a></td><td>${description}</td><td></td>
+                </tr>
+            </table>
+
+            <p class="footnote"><em>Powered by <a href="http://pydap.org/">pydap/$version</a></em></p>
+        </div>
+    <div id="footer-menu">
+        <ul class="menu">
+        <li><a href="http://pacificclimate.org">PCIC Home</a></li>
+        <li><a href="http://pacificclimate.org/terms-of-use">Terms of Use</a></li>
+        <li><a href="http://pacificclimate.org/contact">Contact Us</a></li>
+        </ul>
+    </div>
+    </div>
+    </body>
+</html>
+
+<!--! vim:ft=genshi
+-->
