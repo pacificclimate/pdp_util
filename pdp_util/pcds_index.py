@@ -107,12 +107,12 @@ class PcdsNetworkIndex(PcdsIndex):
         '''Runs a database query and returns a list of (``network_name``, ``network_description``) pairs for which there exists either climo or raw data.
         '''
         sesh = self.session_factory()
-        query = sesh.query(Network, Variable).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
+        query = sesh.query(Network.name, Network.long_name, Variable.cell_method).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
 
         # _could_ do this in a where clause, but there seem to be no good cross database regex queries (runs on Postgres, but not sqlite)
         pattern = '(within|over)'
-        return [(net.name, net.long_name) for net, var in query.all() \
-                if ~(self.args['is_climo'] ^ bool(re.search(pattern, var.cell_method)))]
+        return [(net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() \
+                if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
 
 class PcdsStationIndex(PcdsIndex):
     '''WSGI app which renders an index page for all of the stations in a given PCDS network
@@ -137,10 +137,10 @@ class PcdsStationIndex(PcdsIndex):
         '''
         network_name = self.args['network']
         sesh = self.session_factory()
-        query = sesh.query(Station, History, Variable).join(History).join(Network).join(Variable).join(VarsPerHistory)\
+        query = sesh.query(Station.native_id, History.station_name, Variable.cell_method).join(History).join(Network).join(Variable).join(VarsPerHistory)\
           .filter(Network.name == network_name)\
           .distinct().order_by(Station.native_id)
 
         pattern = '(within|over)'
-        return [ (station.native_id, history.station_name) for station, history, var in query.all() \
-                 if ~(self.args['is_climo'] ^ bool(re.search(pattern, var.cell_method)))]
+        return [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
+                 if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
