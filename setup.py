@@ -6,7 +6,7 @@ from setuptools.command.test import test as TestCommand
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = ['-v', '--tb=no']
+        self.test_args = ['-v', '--tb=short' ,'tests']
         self.test_suite = True
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
@@ -44,7 +44,7 @@ setup(
     tests_require=['pytest',
                    'pydap.handlers.pcic',
                    'sqlalchemy',
-                   'BeautifulSoup',
+                   'beautifulsoup4',
                    'pycds'],
     cmdclass = {'test': PyTest},
     zip_safe=True,
