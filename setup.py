@@ -6,7 +6,7 @@ from setuptools.command.test import test as TestCommand
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = ['-v', '--tb=short' ,'tests']
+        self.test_args = ['-v', '--tb=short' ,'--pdb', 'tests']
         self.test_suite = True
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
@@ -28,9 +28,10 @@ setup(
     author="James Hiebert",
     author_email="hiebert@uvic.ca",
 #    namespace_packages=['pydap', 'pydap.handlers'],
-    dependency_links = ['{0}/PyCDS@0.0.12#egg=pycds-0.0.12'.format(sw_path),
+    dependency_links = ['{0}/PyCDS@0.0.13#egg=pycds-0.0.13'.format(sw_path),
                         '{0}/pydap.handlers.pcic@0.0.3#egg=pydap.handlers.pcic-0.0.3'.format(sw_path),
-                        '{0}/Pydap-3.2@2ccf8be6114b#egg=Pydap-3.2.1dev'.format(sw_path)],
+                        '{0}/Pydap-3.2@2ccf8be6114b#egg=Pydap-3.2.1dev'.format(sw_path),
+                        '{0}/../py_modelmeta#egg=modelmeta-0.1dev'.format(sw_path)],
     install_requires=['webob',
                       'openid2rp',
                       'genshi',
@@ -41,13 +42,17 @@ setup(
                       'simplejson',
                       'pycds>=0.0.12',
                       'numpy',
-                      'python-dateutil',],
+                      'python-dateutil',
+                      # raster portal stuff
+                      'Pydap==3.2.1dev',
+                      'pydap.handlers.pcic>=0.0.3',
+                      'modelmeta',
+                      'PyYAML'
+                      ],
     tests_require=['pytest',
-                   'pydap.handlers.pcic>=0.0.3',
                    'sqlalchemy',
-                   'beautifulsoup4',
-                   'pycds',
-                   'Pydap==3.2.1dev',],
+                   'beautifulsoup4'
+                  ],
     cmdclass = {'test': PyTest},
     zip_safe=True,
     package_data={'pdp_util': ['pdp_util/data/alpha.png',
