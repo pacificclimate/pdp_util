@@ -10,26 +10,17 @@ class MapApp(object):
         '''Initialize the MapApp
         
         :param root: The absolute URL of where this application lives
-        :param ol_path: URL to OpenLayers relative to root
-        :param proj_path: URL to proj.js relative to root
-        :param geoserver_url: Absolute URL to a GeoServer instance
+        :param gs_url: Absolute URL to a GeoServer instance
         :param templates: filesystem path to where the templates live
         :param version: project version string
         :rtype: MapApp
         '''
         required_args = set(['app_root',
                             'templates',
-                            'ol_path',
-                            'proj_path',
-                            'geoserver_url',
+                            'gs_url',
                             'ncwms_url',
                             'version',
-                            'title',
-                            'map_div',
-                            'ensemble_name',
-                            'buttons',
-                            'header_block',
-                            'footer'])
+                            'title'])
         if not required_args.issubset(kwargs.keys()):
                 raise ValueError("Some required arguments are missing {}".format(required_args - set(kwargs.keys())))
         self.options = kwargs
