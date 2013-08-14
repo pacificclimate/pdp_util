@@ -17,8 +17,6 @@ class MapApp(object):
         '''
         required_args = set(['app_root',
                             'templates',
-                            'gs_url',
-                            'ncwms_url',
                             'version',
                             'title'])
         if not required_args.issubset(kwargs.keys()):
