@@ -16,9 +16,11 @@ class MapApp(object):
         :rtype: MapApp
         '''
         required_args = set(['app_root',
-                            'templates',
-                            'version',
-                            'title'])
+                             'js_files',
+                             'css_files',
+                             'templates',
+                             'version',
+                             'title'])
         if not required_args.issubset(kwargs.keys()):
                 raise ValueError("Some required arguments are missing {}".format(required_args - set(kwargs.keys())))
         self.options = kwargs
