@@ -1,5 +1,6 @@
 '''An application for serving a map
 '''
+from pkg_resources import resource_filename
 
 from genshi.template import TemplateLoader
 
@@ -18,7 +19,6 @@ class MapApp(object):
         :rtype: MapApp
         '''
         required_args = set(['app_root',
-                            'templates',
                             'ol_path',
                             'proj_path',
                             'geoserver_url',
@@ -49,7 +49,7 @@ class MapApp(object):
         return self.render(**context)
 
     def render(self, **kwargs):
-        loader = TemplateLoader(self.options['templates'])
+        loader = TemplateLoader(self.options.get('templates', resource_filename('pdp_util', 'templates')))
         tmpl = loader.load('map.html')
         stream = tmpl.generate(**kwargs)
         return stream.render('html', doctype='html', encoding='utf-8')
