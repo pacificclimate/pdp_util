@@ -24,4 +24,4 @@ def test_ensemble_does_not_exist(ensemble_member_lister):
     resp = req.get_response(ensemble_member_lister)
 
     assert resp.status == '200 OK'
-    assert resp.body
+    assert resp.body == ''
