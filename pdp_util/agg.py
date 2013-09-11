@@ -10,8 +10,10 @@ from webob.request import Request
 from paste.httpexceptions import HTTPBadRequest
 import numpy as np
 from sqlalchemy import or_, not_
+from sqlalchemy.orm import sessionmaker
 
 from pdp_util.util import get_stn_list
+from pdp_util.filters import validate_vars
 from pycds import Variable, Network
 from pydap.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
 from pydap.handlers.sql import Engines
@@ -31,14 +33,17 @@ class PcdsZipApp(object):
 
     @property
     def session(self):
-        return Engines[self.dsn]
+        Session = sessionmaker(bind=Engines[self.dsn])
+        return Session()
             
     def __call__(self, environ, start_response):
         '''Fire off pydap requests and return an iterable (from :func:`ziperator`)'''
+        req = Request(environ)
         form = req.params
         climo = True if 'download-climatology' in form else False
 
-        stns = get_stn_list(environ, eval(self.conn_params))
+        filters = validate_vars(environ)
+        stns = get_stn_list(self.session, filters)
 
         ext = get_extension(environ)
         if not ext:
@@ -47,10 +52,10 @@ class PcdsZipApp(object):
         status = '200 OK'
         response_headers = [('Content-type','application/zip'), ('Content-Disposition', 'filename="pcds_data.zip"')]
         start_response(status, response_headers)
-        environ['pydap.handlers.pcic.conn_params'] = self.conn_params
+        environ['pydap.handlers.pcic.dsn'] = self.dsn
 
         responders = chain(get_all_metadata_index_responders(self.session, stns, climo),
-                           get_pcds_responders(stns, ext, get_clip_dates(environ), environ)
+                           get_pcds_responders(self.dsn, stns, ext, get_clip_dates(environ), environ)
                            )
 
         return ziperator(responders)
@@ -158,4 +163,4 @@ def agg_generator(global_conf, **kwargs):
        :param global_conf: dict containing the key conn_params which is passed on to :class:`PcdsZipApp`. Everything else is ignored.
        :param kwargs: ignored
     '''
-    return PcdsZipApp(conn_params=global_conf['conn_params'])
+    return PcdsZipApp(dsn=global_conf['dsn'])
