@@ -14,7 +14,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)                                                                        
 
-__version__ = (0, 1, 0)
+__version__ = (0, 1, 2)
 
 sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
 
@@ -29,8 +29,8 @@ setup(
     author_email="hiebert@uvic.ca",
 #    namespace_packages=['pydap', 'pydap.handlers'],
     dependency_links = ['{0}/PyCDS@0.0.13#egg=pycds-0.0.13'.format(sw_path),
-                        '{0}/pydap.handlers.pcic@0.0.3#egg=pydap.handlers.pcic-0.0.3'.format(sw_path),
-                        '{0}/pydap-3.2@3.2.1#egg=Pydap-3.2.1'.format(sw_path),
+                        '{0}/pydap.handlers.pcic@89fc75e16f3d#egg=pydap.handlers.pcic-0.0.3'.format(sw_path),
+                        '{0}/Pydap-3.2@2ccf8be6114b#egg=Pydap-3.2.1'.format(sw_path),
                         '{0}/../py_modelmeta#egg=modelmeta-0.1dev'.format(sw_path)],
     install_requires=['webob',
                       'openid2rp',
@@ -40,11 +40,11 @@ setup(
                       'pillow',
                       'pytz',
                       'simplejson',
-                      'pycds>=0.0.12',
+                      'pycds >=0.0.12',
                       'numpy',
                       'python-dateutil',
                       # raster portal stuff
-                      'Pydap ==3.2.1',
+                      'Pydap >=3.2.1',
                       'pydap.handlers.pcic >=0.0.3',
                       'modelmeta',
                       'PyYAML'
