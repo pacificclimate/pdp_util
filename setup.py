@@ -55,7 +55,7 @@ setup(
                   ],
     cmdclass = {'test': PyTest},
     zip_safe=True,
-    package_data={'pdp_util': ['pdp_util/data/alpha.png',
+    package_data={'pdp_util': ['data/alpha.png',
                                'templates/*.html']},
 
         classifiers='''Development Status :: 2 - Pre-Alpha
