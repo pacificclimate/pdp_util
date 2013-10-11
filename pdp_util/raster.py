@@ -49,7 +49,7 @@ class RasterServer(DapServer):
                     charset='utf-8')
             return res(environ, start_response)
         else:
-            return DapServer.__call__(self, environ, start_response)
+            return super(RasterServer, self).__call__(environ, start_response)
 
 
     def ourcatalog(self, req):
