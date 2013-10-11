@@ -60,6 +60,25 @@ class RasterServer(DapServer):
         '''
         return db_raster_catalog(self.config)
 
+class EnsembleCatalog(object):
+    '''WSGI app to list an ensemble catalog'''
+    def __init__(self, config=config):
+        self._config = config
+
+    @property
+    def config(self):
+        return self._config
+
+    def __call__(self, environ, start_response):
+
+        urls = db_raster_catalog(self.config)
+        res = Response(
+            body=dumps(urls, indent=4),
+            content_type='application/json',
+            charset='utf-8')
+        return res(environ, start_response)
+
+
 def db_raster_catalog(config):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
     
