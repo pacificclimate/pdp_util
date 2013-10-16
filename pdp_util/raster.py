@@ -60,6 +60,21 @@ class RasterServer(DapServer):
         '''
         return db_raster_catalog(self.config)
 
+class RasterCatalog(RasterServer):
+    '''WSGI app which is a subclass of RasterServer.  Filters the urls on call to permit only MetaData requests'''
+
+    def __call__(self, environ, start_response):
+        '''An override of RasterServer's __call__ which allows only MetaData requests'''
+        req = Request(environ)
+        if req.path_info in ['/', '/catalog.json']:
+            environ['PATH_INFO'] = '/catalog.json'
+            return super(RasterCatalog, self).__call__(environ, start_response)
+        elif req.path_info.split('.')[-1] in ['das', 'dds']:
+            return super(RasterCatalog, self).__call__(environ, start_response)
+        else:
+            start_response('404 Not Found', [])
+            return [str(req.path_info), ' not found']
+
 class EnsembleCatalog(object):
     '''WSGI app to list an ensemble catalog'''
     def __init__(self, config=config):
