@@ -3,6 +3,8 @@ from os.path import basename
 
 from pydap.wsgi.app import DapServer
 from pdp_util.mddb import Mddb
+from pdp_util import session_scope
+from modelmeta import DataFile, Run, EnsembleRun, Ensemble
 
 from simplejson import dumps
 from webob.request import Request
@@ -24,7 +26,7 @@ config = {'name': 'testing-server',
 
 class RasterServer(DapServer):
     '''WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters'''
-    def __init__(self, config=config):
+    def __init__(self, dsn, config=config):
         '''Initialize the application
 
            :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
@@ -32,6 +34,7 @@ class RasterServer(DapServer):
         '''
         DapServer.__init__(self, None)
         self._config = config
+        self.dsn = dsn
 
     @property
     def config(self):
@@ -42,7 +45,8 @@ class RasterServer(DapServer):
         req = Request(environ)
 
         if req.path_info == '/catalog.json':
-            urls = self.ourcatalog(req)
+            with session_scope(self.dsn) as sesh:
+                urls = db_raster_catalog(sesh, self.config['ensemble'], self.config['root_url'])
             res = Response(
                     body=dumps(urls, indent=4),
                     content_type='application/json',
@@ -50,15 +54,6 @@ class RasterServer(DapServer):
             return res(environ, start_response)
         else:
             return super(RasterServer, self).__call__(environ, start_response)
-
-
-    def ourcatalog(self, req):
-        '''
-        Return a JSON listing of the datasets served.
-
-        :param req: FIXME: Unused?
-        '''
-        return db_raster_catalog(self.config)
 
 class RasterCatalog(RasterServer):
     '''WSGI app which is a subclass of RasterServer.  Filters the urls on call to permit only MetaData requests'''
@@ -77,44 +72,45 @@ class RasterCatalog(RasterServer):
 
 class EnsembleCatalog(object):
     '''WSGI app to list an ensemble catalog'''
-    def __init__(self, config=config):
+    def __init__(self, dsn, config=config):
         self._config = config
+        self.dsn = dsn
 
     @property
     def config(self):
         return self._config
 
     def __call__(self, environ, start_response):
-
-        urls = db_raster_catalog(self.config)
+        with session_scope(self.dsn) as sesh:
+            urls = db_raster_catalog(sesh, self.config['ensemble'], self.config['root_url'])
         res = Response(
             body=dumps(urls, indent=4),
             content_type='application/json',
             charset='utf-8')
         return res(environ, start_response)
 
-
-def db_raster_catalog(config):
+def db_raster_catalog(session, ensemble, root_url):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
-    
-       :param config: A config dictionary which contains keys: `ensemble` and `root_url`
-       :type config: dict
+
+       :param session: SQLAlchemy session for the pcic_meta database
+       :param ensemble: Name of the ensemble for which member files should be listed
+       :param root_url: Base URL which should be prepended to the beginning of each dataset ID
        :rtype: dict
     '''
-    m = Mddb(config['ensemble'])
-    return { id.replace('+', '-'): config['root_url'] + basename(filename) for id, filename in m.files.items() } #FIXME: remove the replace when ncwms stops being dumb
+    files = ensemble_files(session, ensemble)
+    return { id.replace('+', '-'): root_url + basename(filename) for id, filename in files.items() } #FIXME: remove the replace when ncwms stops being dumb
 
-def db_raster_configurator(name, version, api_version, ensemble, root_url='/'):
+def db_raster_configurator(session, name, version, api_version, ensemble, root_url='/'):
     '''A function to construct a config dict which is usable for configuring Pydap for serving rasters
 
+       :param session: SQLAlchemy session for the pcic_meta database
        :param name: Name of this server e.g. `my-raster-server`
        :param version: Version of the server application
        :param api_version: OPeNDAP API version?
        :param ensemble: The identifier for the PCIC MetaData DataBase (:class:`Mddb`) ensemble to configure
        :param root_url: URL to prepend to all of the dataset ids
     '''
-    m = Mddb(ensemble)
-    files = m.files
+    files = ensemble_files(session, ensemble)
     config = {'name': name,
               'version': version,
               'api_version': api_version,
@@ -123,3 +119,7 @@ def db_raster_configurator(name, version, api_version, ensemble, root_url='/'):
               'handlers': [{'url': basename(filename), 'file': filename} for id, filename in files.items()]
               }
     return config
+
+def ensemble_files(session, ensemble_name):
+    q = session.query(DataFile).join(Run).join(EnsembleRun).join(Ensemble).filter(Ensemble.name == ensemble_name)
+    return { row.unique_id: row.filename for row in q }

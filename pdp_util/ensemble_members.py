@@ -18,7 +18,8 @@ class EnsembleMemberLister(object):
             start_response('400 Bad Request', [])
             return ["Required parameter 'ensemble_name' not specified"]
 
-        ensemble = self._session_factory().query(Ensemble).filter(Ensemble.name == ensemble_name).first() # FIXME: Could raise error
+        sesh = self._session_factory()
+        ensemble = sesh.query(Ensemble).filter(Ensemble.name == ensemble_name).first() # FIXME: Could raise error
 
         status = '200 OK'
         response_headers = [('Content-type','application/json; charset=utf-8')]
@@ -42,4 +43,5 @@ class EnsembleMemberLister(object):
                 keys = set(a[:,0])
                 return { key: dictify(a[ array([ val == key for val in a[:,0] ], dtype=bool) ,1:]) for key in keys }
 
+        sesh.close()
         return dumps(dictify(array(tuples)))

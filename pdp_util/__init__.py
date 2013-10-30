@@ -2,6 +2,7 @@
 The pdp_util module
 """
 from threading import Lock
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -42,6 +43,21 @@ def get_session(dsn):
             return Session
     return DBPOOL[dsn]
 
+# From http://docs.sqlalchemy.org/en/rel_0_9/orm/session.html#session-faq-whentocreate
+@contextmanager
+def session_scope(dsn):
+    '''Provide a transactional scope around a series of operations.'''
+    factory = get_session(dsn)
+    session = factory()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+    
 from paste.httpexceptions import HTTPNotFound
 
 class Catcher(object):
