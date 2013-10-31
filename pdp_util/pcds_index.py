@@ -113,9 +113,12 @@ class PcdsNetworkIndex(PcdsIndex):
             query = sesh.query(Network.name, Network.long_name, Variable.cell_method).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
 
             # _could_ do this in a where clause, but there seem to be no good cross database regex queries (runs on Postgres, but not sqlite)
+            # FIXME: this is super slow. Probably too much data transfer
             pattern = '(within|over)'
-            return [(net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() \
-                    if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
+            elements = [ (net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method))) ]
+        elements = list(set(elements))
+        elements.sort()
+        return elements
 
 class PcdsStationIndex(PcdsIndex):
     '''WSGI app which renders an index page for all of the stations in a given PCDS network
@@ -145,5 +148,10 @@ class PcdsStationIndex(PcdsIndex):
               .distinct().order_by(Station.native_id)
 
             pattern = '(within|over)'
-            return [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
-                     if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
+            # FIXME: this is super slow. Probably too much data transfer
+            elements = [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
+                         if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
+        elements = list(set(elements))
+        elements.sort()
+        return elements
+
