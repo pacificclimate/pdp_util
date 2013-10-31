@@ -55,15 +55,15 @@ class PcicOidMiddleware(Openid2Middleware):
 
         def login_401():
             '''Display a login page'''
-            start_response('401 Unauthorized', [('Content-type','text/html')])
+            start_response('401 Unauthorized', [('Content-type','text/html; charset=utf-8')])
             notice = environ.get('openid2rp.notice', '') or ''
             params = {'notice': notice,
                       'providers': providers,
                       'root': self.root,
                       'return_to': self.return_to
                       }
-
-            return login_html(self.templates, **params)
+            output = login_html(self.templates, **params)
+            return [ output ]
 
         if 'openid_login' in request.params:
             return login_401()
@@ -110,7 +110,7 @@ def login_html(tmpl_dir, **kwargs):
     loader = TemplateLoader(tmpl_dir)
     tmpl = loader.load('oid_login.html')
     stream = tmpl.generate(**kwargs)
-    return stream.render('html', doctype='html')
+    return stream.render('html', doctype='html', encoding='utf-8')
 
 def check_authorized_return_email(environ, start_response):
     '''Simple WSGI application to test for whether the client is authenticated or not
