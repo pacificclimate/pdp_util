@@ -9,13 +9,15 @@ from dateutil.relativedelta import relativedelta
 from pycds import CrmpNetworkGeoserver as cng, History, ObsCountPerMonthHistory, ClimoObsCount
 from pdp_util.util import get_stn_list, get_clip_dates
 from pdp_util.filters import validate_vars
-from pdp_util import get_session
+from pdp_util import session_scope
 
 class CountStationsApp(object):
     '''Application for counting the number of stations that meet the query parameters
     '''
     def __init__(self, conn_params):
-        self.session_factory = get_session(conn_params)
+        def session_scope_factory():
+            return session_scope(conn_params)
+        self.session_scope_factory = session_scope_factory
 
     def __call__(self, environ, start_response):
         status = '200 OK'
@@ -24,7 +26,8 @@ class CountStationsApp(object):
 
         filters = validate_vars(environ)
 
-        stns = get_stn_list(self.session_factory(), filters)
+        with self.session_scope_factory() as sesh:
+            stns = get_stn_list(sesh, filters)
         return json.dumps({'stations_selected': len(stns)})
 
 class CountRecordLengthApp(object):
@@ -32,18 +35,22 @@ class CountRecordLengthApp(object):
        by the stations which meet the given criteria
     '''
     def __init__(self, conn_params, max_stns):
-        self.session_factory = get_session(conn_params)
         self.max_stns = int(max_stns)
+
+        def session_scope_factory():
+            return session_scope(conn_params)
+        self.session_scope_factory = session_scope_factory
+
 
     def __call__(self, environ, start_response):
         req = Request(environ)
         form = req.params
-        sesh = self.session_factory()
 
         filters = validate_vars(environ)
-        stns = [stn[0] for stn in get_stn_list(sesh, filters, cng.station_id)]
-
         sdate, edate = get_clip_dates(environ)
+
+        with self.session_scope_factory() as sesh:
+            stns = [stn[0] for stn in get_stn_list(sesh, filters, cng.station_id)]
 
         rv = length_of_return_dataset(sesh, stns, sdate, edate)
         obs_count = int(rv[0] if rv[0] else 0)

@@ -3,7 +3,7 @@ from StringIO import StringIO
 import datetime
 from pkg_resources import resource_filename
 
-from pdp_util import get_session
+from pdp_util import session_scope
 from pycds import Network
 
 import pytz
@@ -28,10 +28,10 @@ class LegendApp(object):
            :type conn_params: dict
         '''
         self.colors = {}
-        sesh = get_session(conn_params)()
-        q = sesh.query(Network.name, Network.color)
-        for net, col in q:
-            self.colors[net.lower()] = col
+        with session_scope(conn_params) as sesh:
+            q = sesh.query(Network.name, Network.color)
+            for net, col in q:
+                self.colors[net.lower()] = col
 
     def __call__(self, environ, start_response):
         req = Request(environ)

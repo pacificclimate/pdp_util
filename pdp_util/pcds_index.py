@@ -4,7 +4,7 @@ from sqlalchemy.sql.expression import select
 from genshi.template import TemplateLoader
 
 import pydap.lib
-from pdp_util import get_session
+from pdp_util import session_scope
 from pycds import Network, Variable, VarsPerHistory, Station, History
 
 class PcdsIndex(object):
@@ -25,7 +25,10 @@ class PcdsIndex(object):
     '''
     def __init__(self, **kwargs):
         self.args = kwargs
-        self.session_factory = get_session(kwargs['conn_params'])
+        def session_scope_factory():
+            return session_scope(kwargs['conn_params'])
+        self.session_scope_factory = session_scope_factory
+
 
     def __call__(self, environ, start_response):
         self.args['root'] = self.args['app_root'] # WTF?
@@ -106,13 +109,13 @@ class PcdsNetworkIndex(PcdsIndex):
     def get_elements(self):
         '''Runs a database query and returns a list of (``network_name``, ``network_description``) pairs for which there exists either climo or raw data.
         '''
-        sesh = self.session_factory()
-        query = sesh.query(Network.name, Network.long_name, Variable.cell_method).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
+        with self.session_scope_factory() as sesh:
+            query = sesh.query(Network.name, Network.long_name, Variable.cell_method).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
 
-        # _could_ do this in a where clause, but there seem to be no good cross database regex queries (runs on Postgres, but not sqlite)
-        pattern = '(within|over)'
-        return [(net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() \
-                if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
+            # _could_ do this in a where clause, but there seem to be no good cross database regex queries (runs on Postgres, but not sqlite)
+            pattern = '(within|over)'
+            return [(net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() \
+                    if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
 
 class PcdsStationIndex(PcdsIndex):
     '''WSGI app which renders an index page for all of the stations in a given PCDS network
@@ -136,11 +139,11 @@ class PcdsStationIndex(PcdsIndex):
         '''Runs a database query and returns a list of (``native_id``, ``station_name``) pairs which are in the given PCDS network.
         '''
         network_name = self.args['network']
-        sesh = self.session_factory()
-        query = sesh.query(Station.native_id, History.station_name, Variable.cell_method).join(History).join(Network).join(Variable).join(VarsPerHistory)\
-          .filter(Network.name == network_name)\
-          .distinct().order_by(Station.native_id)
+        with self.session_scope_factory() as sesh:
+            query = sesh.query(Station.native_id, History.station_name, Variable.cell_method).join(History).join(Network).join(Variable).join(VarsPerHistory)\
+              .filter(Network.name == network_name)\
+              .distinct().order_by(Station.native_id)
 
-        pattern = '(within|over)'
-        return [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
-                 if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
+            pattern = '(within|over)'
+            return [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
+                     if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
