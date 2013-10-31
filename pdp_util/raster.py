@@ -2,7 +2,6 @@ import os
 from os.path import basename
 
 from pydap.wsgi.app import DapServer
-from pdp_util.mddb import Mddb
 from pdp_util import session_scope
 from modelmeta import DataFile, Run, EnsembleRun, Ensemble
 
