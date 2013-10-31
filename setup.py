@@ -30,7 +30,7 @@ setup(
 #    namespace_packages=['pydap', 'pydap.handlers'],
     dependency_links = ['{0}/PyCDS@0.0.13#egg=pycds-0.0.13'.format(sw_path),
                         '{0}/pydap.handlers.pcic@89fc75e16f3d#egg=pydap.handlers.pcic-0.0.3'.format(sw_path),
-                        '{0}/Pydap-3.2@2ccf8be6114b#egg=Pydap-3.2.1'.format(sw_path),
+                        '{0}/Pydap-3.2@8abf4cc50812#egg=Pydap-3.2.1'.format(sw_path),
                         '{0}/../py_modelmeta#egg=modelmeta-0.1dev'.format(sw_path)],
     install_requires=['webob',
                       'openid2rp',
