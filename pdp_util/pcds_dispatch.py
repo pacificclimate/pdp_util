@@ -1,6 +1,10 @@
+import logging
+
 from pydap.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
 from pdp_util.pcds_index import PcdsIndex, PcdsNetworkIndex, PcdsStationIndex, PcdsIsClimoIndex
 from paste.httpexceptions import HTTPNotFound, HTTPSeeOther
+
+logger = logging.getLogger(__name__)
 
 class PcdsDispatcher(object):
     '''This class is a WSGI app which interprets parts of a URL and routes the request to one of several handlers
@@ -53,10 +57,12 @@ class PcdsDispatcher(object):
 
         :param path: the PATH_INFO of the request
         '''
+        logger.debug("Attempting to route a request to path: %s", path)
         index_kwargs = self.kwargs
         if 'pcds' in path:
             path = path.split('pcds', 1)[1]
         url_parts = path.strip('/').split('/')
+        logger.debug("url_parts", url_parts)
 
         try:
             is_climo = url_parts.pop(0)
@@ -110,7 +116,7 @@ class PcdsDispatcher(object):
             return cls_, [self.kwargs['conn_params']], {}, env
 
         except IndexError:
-            # It's cool, we're just doing a station listing for a network
+            logger.debug('Listing stations for a network')
             self.kwargs.update(index_kwargs)
             return IndexClass, [], self.kwargs, {}
 
