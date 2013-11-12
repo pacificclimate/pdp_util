@@ -1,5 +1,6 @@
 import pytest
 import pycds
+import modelmeta
 import pdp_util
 from pdp_util.ensemble_members import EnsembleMemberLister
 
@@ -12,16 +13,14 @@ def test_session():
 def conn_params():
     return pycds.test_dsn
 
-# FIXME: we need a test DSN
 @pytest.fixture(scope="function")
 def ensemble_member_lister():
-    return EnsembleMemberLister('postgresql://pcic_meta@monsoon.pcic/pcic_meta')
+    return EnsembleMemberLister(modelmeta.test_dsn)
 
 @pytest.fixture(scope="function")
 def mm_session():
-    sesh = pdp_util.get_session('postgresql://pcic_meta@monsoon.pcic/pcic_meta')
-    return sesh()
+    return modelmeta.test_session()
 
 @pytest.fixture(scope="function")
 def mm_dsn():
-    return 'postgresql://pcic_meta@monsoon.pcic/pcic_meta'
+    return modelmeta.test_dsn
