@@ -45,9 +45,6 @@ class EnsembleMemberLister(object):
                     yield run.emission.short_name, run.model.short_name, run.name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
 
 class PrismEnsembleLister(EnsembleMemberLister):
-    def __init__(self, dsn):
-        super(PrismEnsembleLister, self).__init__(dsn)
-    
     def list_stuff(self, ensemble):
         for ensemble_run in ensemble.ensemble_runs:
             run = ensemble_run.run
@@ -56,9 +53,6 @@ class PrismEnsembleLister(EnsembleMemberLister):
                     yield run.model.short_name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
 
 class DownscaledEnsembleLister(EnsembleMemberLister):
-    def __init__(self, dsn):
-        super(DownscaledEnsembleLister, self).__init__(dsn)
-    
     def list_stuff(self, ensemble):
         for ensemble_run in ensemble.ensemble_runs:
             run = ensemble_run.run
