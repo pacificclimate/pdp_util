@@ -26,8 +26,8 @@ class EnsembleMemberLister(object):
             ensemble = sesh.query(Ensemble).filter(Ensemble.name == ensemble_name).first()
 
             if not ensemble: # Result does not contain any row therefore ensemble does not exist
-                start_response('404 Not Found', [])
-                return ["Requested ensemble does not exist or does not contain any members"]
+                start_response('200 OK', [('Content-type','text/plain; charset=utf-8')])
+                return ['']
 
             tuples = [x for x in self.list_stuff(ensemble)] # query is lazy load, so must be assigned within scope
 
