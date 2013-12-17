@@ -1,57 +1,50 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:py="http://genshi.edgewall.org/">
   <head>
-    <title>PCIC OpenID Login</title>
+    <title>OpenID Login</title>
 
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link type="text/css" href="${root}/css/blitzer/jquery-ui-1.8.2.custom.css" rel="stylesheet" /> 
-    <link rel="stylesheet" type="text/css" media="screen" href="${root}/css/default.css" />
-    <link rel="stylesheet" type="text/css" media="screen" href="${root}/css/pcic.css" />
-    <script type="text/javascript" src="${root}/js/jquery-1.4.2.min.js"></script>
-    <script type="text/javascript" src="${root}/js/jquery-ui-1.8.2.custom.min.js"></script>
-    <script type="text/javascript" src="${root}/js/jquery.hotkeys-0.7.9.min.js"></script>
-    <script type="text/javascript" src="${root}/js/zebra.js"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="${root}/css/reset.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="${root}/css/main.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="${root}/css/mini.css" />
+    <script type="text/javascript" src="${root}/js/jquery-1.10.2.js"></script>
+    <script type="text/javascript" src="${root}/js/jquery-ui-1.10.2.custom.js"></script>
   </head>
 
   <body class="ui-helper-reset ui-widget">
     <div id="wrapper">
       <div id="header">
-	<a href="http://pacificclimate.org"><img src="${root}/images/banner.png" alt="PCIC Logo" /></a>
-	<div id="header-title">PCIC Data Portal</div>
+        <a href="http://pacificclimate.org" style="background-image:url(${root}/images/banner_sm.png);" class="logo_sm">PCIC Home Page</a>
+        <h1>OpenID Login</h1>
+
       </div>
-      <div id="header-menu">
-        <ul class="menu">
-          <li><a href="http://pacificclimate.org">PCIC Home</a></li>
-          <li><a href="http://pacificclimate.org/terms-of-use">Terms of Use</a></li>
-          <li><a href="http://pacificclimate.org/contact">Contact Us</a></li>
-        </ul>
-      </div>
-      <div id="main" class="ui-corner-all ui-widget-content">
-	<h1 id="title">Login with OpenID:</h1>
+      <div id="main">
 	${notice}
-	<p><a href="http://openid.net/">What is OpenID?</a></p>
-	<p>PCIC only asks for a valid e-mail address (supplied through your <a href="http://openid.net/get-an-openid/">OpenID provider</a>) for the purposes of notifying users in the event of changes or errors to the data located herin.</p>
-<!--	<form>
-	  <input name="openid_identifier" size="60"/>
-	</form>-->
-	<table>
-	  <tr class="ui-widget-header">
+	<p>PCIC asks for a valid e-mail address (supplied through your <a href="http://openid.net/get-an-openid/">OpenID provider</a>) for the purposes of notifying users in the event of changes or errors to the data located herin.  Your e-mail address is the only personal information that PCIC will gather and will be kept secure.</p>
+  <p style="text-align:center;"><a href="http://openid.net/" target="blank" class="button">What is OpenID?</a></p>
+
+	<table class="providers">
+	  <thead>
+    <tr>
 	    <th>Provider</th>
 	    <th>Identifier</th>
 	  </tr>
-	  <tr py:for="p in providers" class="ui-widget-content">
-	    <td><a href="?openid_identifier=${p.url}&amp;return_to=${return_to}"><img src="${p.icon}" alt="${p.name}" />${p.name}</a></td>
+  </thead>
+  <tbody>
+    <tr py:for="p in providers" href="?openid_identifier=${p.url}&amp;return_to=${return_to}" class="clickableRow">
+	    <td><a><img src="${p.icon}" alt="${p.name}" class="oid-logo" />${p.name}</a></td>
 	    <td>${p.url}</td>
 	  </tr>
+  </tbody>
 	</table>
       </div>
-      <div id="footer-menu">
-        <ul class="menu">
-          <li><a href="http://pacificclimate.org">PCIC Home</a></li>
-          <li><a href="http://pacificclimate.org/terms-of-use">Terms of Use</a></li>
-          <li><a href="http://pacificclimate.org/contact">Contact Us</a></li>
-        </ul>
-      </div>
     </div>
+     <script>
+    $(document).ready(function($) {
+      $(".clickableRow").click(function() {
+            window.document.location = $(this).attr("href");
+      }).css("cursor", "pointer");
+});
+     </script>
   </body>
 </html>
