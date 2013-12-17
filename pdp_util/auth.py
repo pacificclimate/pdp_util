@@ -4,6 +4,7 @@ The pdp_util.auth module contains apps and functions to handle the OpenID authen
 
 import sys
 import json
+import urllib
 from collections import namedtuple
 
 from openid2rp import get_email
@@ -51,7 +52,7 @@ class PcicOidMiddleware(Openid2Middleware):
         request = Request(environ)
         our_session = self.store.session
 
-        self.return_to = request.params.get('return_to', request.referrer)
+        self.return_to = urllib.quote(request.params.get('return_to', request.url))
 
         def login_401():
             '''Display a login page'''
