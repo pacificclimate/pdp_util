@@ -26,8 +26,8 @@ class EnsembleMemberLister(object):
             ensemble = sesh.query(Ensemble).filter(Ensemble.name == ensemble_name).first()
 
             if not ensemble: # Result does not contain any row therefore ensemble does not exist
-                start_response('404 Not Found', [])
-                return ["Requested ensemble does not exist or does not contain any members"]
+                start_response('200 OK', [('Content-type','text/plain; charset=utf-8')])
+                return ['']
 
             tuples = [x for x in self.list_stuff(ensemble)] # query is lazy load, so must be assigned within scope
 
@@ -45,9 +45,6 @@ class EnsembleMemberLister(object):
                     yield run.emission.short_name, run.model.short_name, run.name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
 
 class PrismEnsembleLister(EnsembleMemberLister):
-    def __init__(self, dsn):
-        super(PrismEnsembleLister, self).__init__(dsn)
-    
     def list_stuff(self, ensemble):
         for ensemble_run in ensemble.ensemble_runs:
             run = ensemble_run.run
@@ -56,9 +53,6 @@ class PrismEnsembleLister(EnsembleMemberLister):
                     yield run.model.short_name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
 
 class DownscaledEnsembleLister(EnsembleMemberLister):
-    def __init__(self, dsn):
-        super(DownscaledEnsembleLister, self).__init__(dsn)
-    
     def list_stuff(self, ensemble):
         for ensemble_run in ensemble.ensemble_runs:
             run = ensemble_run.run
