@@ -38,27 +38,18 @@ class EnsembleMemberLister(object):
         return dumps(d)
 
     def list_stuff(self, ensemble):
-        for ensemble_run in ensemble.ensemble_runs:
-            run = ensemble_run.run
-            for file_ in run.files:
-                for data_file_variable in file_.data_file_variables:
-                    yield run.emission.short_name, run.model.short_name, run.name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
+        for dfv in ensemble.data_file_variables:
+            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
 class PrismEnsembleLister(EnsembleMemberLister):
     def list_stuff(self, ensemble):
-        for ensemble_run in ensemble.ensemble_runs:
-            run = ensemble_run.run
-            for file_ in run.files:
-                for data_file_variable in file_.data_file_variables:
-                    yield run.model.short_name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
+        for dfv in ensemble.data_file_variables:
+            yield dfv.emission.short_name, dfv.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
 class DownscaledEnsembleLister(EnsembleMemberLister):
     def list_stuff(self, ensemble):
-        for ensemble_run in ensemble.ensemble_runs:
-            run = ensemble_run.run
-            for file_ in run.files:
-                for data_file_variable in file_.data_file_variables:
-                    yield run.emission.short_name, run.model.short_name, data_file_variable.netcdf_variable_name, file_.unique_id.replace('+', '-') # FIXME: kill the replacement once ncWMS stops being dumb
+        for dfv in ensemble.data_file_variables:
+            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
 def dictify(a):
     if len(a) == 1:

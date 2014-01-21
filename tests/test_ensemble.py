@@ -10,8 +10,8 @@ def test_ensemble_member_lister(ensemble_member_lister):
     
     ensembles = loads(resp.body)
     # Good enough
-    assert len(ensembles) == 6
-    assert set(ensembles.keys()) == set(['observation', 'historical+rcp85', '1948-1990+1991-2011', 'historical+rcp45', '1958-1990+1991-2001', 'historical+rcp26'])
+    assert len(ensembles) == 3
+    assert set(ensembles.keys()) == set(['historical+rcp85', 'historical+rcp45', 'historical+rcp26'])
 
 def test_ensemble_bad_request(ensemble_member_lister):
     req = Request.blank('')

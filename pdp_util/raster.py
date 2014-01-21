@@ -3,7 +3,7 @@ from os.path import basename
 
 from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
-from modelmeta import DataFile, Run, EnsembleRun, Ensemble
+from modelmeta import DataFile, DataFileVariable, EnsembleDataFileVariables, Ensemble
 
 from simplejson import dumps
 from webob.request import Request
@@ -120,5 +120,5 @@ def db_raster_configurator(session, name, version, api_version, ensemble, root_u
     return config
 
 def ensemble_files(session, ensemble_name):
-    q = session.query(DataFile).join(Run).join(EnsembleRun).join(Ensemble).filter(Ensemble.name == ensemble_name)
+    q = session.query(DataFile).join(DataFileVariable).join(EnsembleDataFileVariables).join(Ensemble).filter(Ensemble.name == ensemble_name)
     return { row.unique_id: row.filename for row in q }
