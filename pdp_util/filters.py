@@ -45,7 +45,7 @@ form_filters = {
     'from-date':             FormFilter('from-date',             r'[0-9]{4}/[0-9]{2}/[0-9]{2}', lambda x: cng.max_obs_time > datetime.strptime(x, '%Y/%m/%d')),
     'to-date':               FormFilter('to-date',               r'[0-9]{4}/[0-9]{2}/[0-9]{2}', lambda x: cng.min_obs_time < datetime.strptime(x, '%Y/%m/%d')),
     'network-name':          FormFilter('network-name',          r'[A-Za-z_]+',                 lambda x: cng.network_name == x),
-    'input-var':             FormFilter('input-var',             r'[a-z: _]+',                  lambda x: cng.vars.like(x)),
+    'input-var':             FormFilter('input-var',             r'[a-z: _]+',                  lambda x: cng.vars.like('%{}%'.format(x))),
     'input-freq':            FormFilter('input-freq',            r'(1-hourly|irregular|daily|12-hourly)', lambda x: cng.freq == x),
     'input-polygon':         FormFilter('input-polygon',          mk_mp_regex(),                "ST_intersects(ST_GeomFromText('%s', 4326), the_geom)"),
     'only-with-climatology': FormFilter('only-with-climatology', 'only-with-climatology',       lambda x: or_(cng.vars.like('%within%'), cng.vars.like('%over%')))
