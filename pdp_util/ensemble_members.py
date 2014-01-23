@@ -44,7 +44,7 @@ class EnsembleMemberLister(object):
 class PrismEnsembleLister(EnsembleMemberLister):
     def list_stuff(self, ensemble):
         for dfv in ensemble.data_file_variables:
-            yield dfv.emission.short_name, dfv.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
+            yield dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
 class DownscaledEnsembleLister(EnsembleMemberLister):
     def list_stuff(self, ensemble):
