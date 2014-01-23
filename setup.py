@@ -20,6 +20,7 @@ sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/softwar
 
 setup(
     name="pdp_util",
+    package_dir = {'pdp_util': 'pdp_util'},
     description="A package supplying numerous apps for running PCIC's data server",
     keywords="sql database opendap dods dap data science climate oceanography meteorology",
     packages=['pdp_util'],
