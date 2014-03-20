@@ -41,7 +41,7 @@ class PcdsIndex(object):
         params.update({
             'environ': environ,
             'elements': self.get_elements(),
-            'version': u'.'.join(str(d) for d in pydap.lib.__version__)
+            'version': str(pydap.lib.__version__)
             })
         return self.render(**params)
 

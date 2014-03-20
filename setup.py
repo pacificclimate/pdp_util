@@ -14,7 +14,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)                                                                        
 
-__version__ = (0, 1, 4)
+__version__ = (0, 1, 5)
 
 sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
 
@@ -57,6 +57,7 @@ setup(
     cmdclass = {'test': PyTest},
     zip_safe=True,
     package_data={'pdp_util': ['data/alpha.png',
+                               'data/*.css',
                                'templates/*.html']},
 
         classifiers='''Development Status :: 2 - Pre-Alpha
