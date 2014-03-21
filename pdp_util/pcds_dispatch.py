@@ -57,7 +57,7 @@ class PcdsDispatcher(object):
 
         :param path: the PATH_INFO of the request
         '''
-        logger.debug("Attempting to route a request to path: %s", path)
+        logger.debug("Attempting to route a request to path: {}".format(path))
         index_kwargs = self.kwargs
         if 'pcds' in path:
             path = path.split('pcds', 1)[1]
@@ -69,12 +69,6 @@ class PcdsDispatcher(object):
             is_climo = {'climo': True, 'raw': False, '': None}[is_climo]
             if is_climo == None:
                 index_kwargs['is_climo'] = None
-                # climo_kwargs = {'conn_params': self.kwargs['conn_params'],
-                #                 'is_climo': None,
-                #                 'app_root': self.kwargs['app_root'],
-                #                 'ol_path': self.kwargs['ol_path'],
-                #                 'templates': self.kwargs['templates']
-                #                 }
                 return PcdsIsClimoIndex, [], index_kwargs, {}
 
         except KeyError:
