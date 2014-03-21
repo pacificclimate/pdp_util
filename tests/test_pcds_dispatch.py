@@ -31,7 +31,7 @@ def test_climo_listing(the_app):
     soup = BeautifulSoup(resp.body)
     assert "Climatological calculations" in resp.body
     assert "raw/" in resp.body
-    assert soup.title.string == "PCIC Data Portal: PCDS Data"
+    assert soup.title.string == "PCDS: PCDS Data"
 
 @pytest.mark.parametrize('url', ['/raw/', '/raw'])
 def test_network_listing(the_app, url):
@@ -70,7 +70,7 @@ def test_bad_network(the_app):
     make_common_assertions(resp)
 
     soup = BeautifulSoup(resp.body)
-    assert soup.title.string == 'PCIC Data Portal: Stations for network network_does_not_exist'
+    assert soup.title.string == 'PCDS: Stations for network network_does_not_exist'
     
     stuff = soup.find_all('tr')
     assert len(stuff) == 1 # No stations to list

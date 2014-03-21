@@ -23,6 +23,7 @@ def test_can_instantiate_filters():
     # Several valid filters
     ({'input-freq': 'irregular', 'only-with-climatology': 'only-with-climatology', 'from-date': '1890/12/25'},
      [cng.freq == 'irregular', or_(cng.vars.like('%within%'), cng.vars.like('%over%')), cng.max_obs_time > datetime(1890, 12, 25)]),
+    #({'input-var': ''}, []),
     # valid filter names with invalid data
     ({'input-var': '%&Invalid variable! name!'}, []),
     ({'only-with-climatology': 'invalid value'}, [])
