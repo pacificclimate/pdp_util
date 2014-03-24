@@ -56,6 +56,12 @@ class VicGen1EnsembleLister(EnsembleMemberLister):
         for dfv in ensemble.data_file_variables:
             yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
+class ClimdexEnsembleLister(EnsembleMemberLister):
+    def list_stuff(self, ensemble):
+        for dfv in ensemble.data_file_variables:
+            ## FIXME
+            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, "annual" if "_yr_" in dfv.file.unique_id else "monthly", dfv.file.unique_id.replace('+', '-')
+
 def dictify(a):
     if len(a) == 1:
         return a.flatten()[0]
