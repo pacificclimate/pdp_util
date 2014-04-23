@@ -1,4 +1,4 @@
-import re, os
+import re
 from StringIO import StringIO
 import datetime
 from pkg_resources import resource_filename

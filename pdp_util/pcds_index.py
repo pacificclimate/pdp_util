@@ -1,6 +1,5 @@
 import re
 
-from sqlalchemy.sql.expression import select
 from genshi.template import TemplateLoader
 
 import pydap.lib

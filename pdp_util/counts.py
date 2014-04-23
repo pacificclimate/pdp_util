@@ -1,9 +1,6 @@
-from datetime import timedelta
-
 import json
 from webob.request import Request
-from sqlalchemy.sql.expression import select
-from sqlalchemy import func, text
+from sqlalchemy import func
 from dateutil.relativedelta import relativedelta
 
 from pycds import CrmpNetworkGeoserver as cng, History, ObsCountPerMonthHistory, ClimoObsCount

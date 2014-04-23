@@ -2,7 +2,6 @@
 The pdp_util.auth module contains apps and functions to handle the OpenID authentication to the data portal
 '''
 
-import sys
 import json
 import urllib
 from collections import namedtuple
@@ -12,7 +11,6 @@ from openid2rp.wsgi import Openid2Middleware
 from openid2rp.wsgi.memstore import InMemoryStore
 from webob.request import Request
 from genshi.template import TemplateLoader
-from paste.httpexceptions import HTTPUnauthorized
 
 # supported providers
 Provider = namedtuple('Provider', ['name', 'icon', 'url', 'signup'])
