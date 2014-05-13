@@ -40,10 +40,10 @@ def test_network_listing(the_app, url):
     make_common_assertions(resp)
 
     soup = BeautifulSoup(resp.body)
-    assert "Participating CRMP Networks" in resp.body
+    assert "PCDS: Participating CRMP Networks" in resp.body
     for network in ['EC', 'ENV-ASP', 'ARDA', 'EC_raw', 'FLNRO-WMB', 'AGRI', 'MoTIe']:
         assert network in resp.body
-    assert soup.title.string == "PCIC Data Portal: Participating CRMP Networks"
+    assert soup.title.string == "PCDS: Participating CRMP Networks"
     assert "Environment Canada (Canadian Daily Climate Data 2007)" in resp.body
 
 def test_bad_is_climo(the_app):
@@ -53,7 +53,7 @@ def test_bad_is_climo(the_app):
     assert resp.status == '404 Not Found'
     
 @pytest.mark.parametrize('url', ['/raw/EC_raw', '/raw/EC_raw/'])
-def test_network_listing(the_app, url):
+def test_station_listing(the_app, url):
     req = Request.blank(url)
     resp = req.get_response(the_app)
     make_common_assertions(resp)

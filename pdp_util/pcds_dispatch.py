@@ -62,7 +62,7 @@ class PcdsDispatcher(object):
         if 'pcds' in path:
             path = path.split('pcds', 1)[1]
         url_parts = path.strip('/').split('/')
-        logger.debug("url_parts", url_parts)
+        logger.debug("url_parts: {}".format(url_parts))
 
         try:
             is_climo = url_parts.pop(0)
