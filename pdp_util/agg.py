@@ -22,6 +22,9 @@ from pydap.handlers.lib import BaseHandler
 
 from pdp_util.util import get_extension, get_clip_dates
 
+def null_start_response(status, response_headers, exc_info=None):
+    return None
+
 class PcdsZipApp(object):
     '''WSGI application which accepts a set of PCDS filters in the request and responds with a generator which streams the OPeNDAP responses one by one
     '''
@@ -124,7 +127,7 @@ def metadata_index_responder(sesh, network, climo=False):
     responder = BaseHandler(dst)
     
     environ = {'PATH_INFO': '/variables.foo.ascii', 'REQUEST_METHOD': 'GET'}
-    return responder(environ, lambda x, y: None)
+    return responder(environ, null_start_response)
 
 def get_pcds_responders(dsn, stns, extension, clip_dates, environ):
     '''Iterator object which coalesces a list of stations, compresses them, and returns the data for the response
@@ -155,7 +158,7 @@ def get_pcds_responders(dsn, stns, extension, clip_dates, environ):
         newenv['QUERY_STRING'] = '&'.join(qs)
 
         name = '%(net)s/%(stn)s.%(extension)s' % locals()
-        yield (name, handler(newenv, lambda x, y: None))
+        yield (name, handler(newenv, null_start_response))
 
 def agg_generator(global_conf, **kwargs):
     '''Factory function for the :class:`PcdsZipApp`
