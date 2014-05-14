@@ -60,14 +60,14 @@ setup(
                                'data/*.css',
                                'templates/*.html']},
 
-        classifiers='''Development Status :: 2 - Pre-Alpha
+        classifiers='''Development Status :: 5 - Production/Stable
 Environment :: Console
 Environment :: Web Environment
 Intended Audience :: Developers
 Intended Audience :: Science/Research
-License :: OSI Approved :: GNU General Public License (GPL)
+License :: OSI Approved :: GNU General Public License v3 (GPLv3)
 Operating System :: OS Independent
-Programming Language :: Python
+Programming Language :: Python :: 2.7
 Topic :: Internet
 Topic :: Internet :: WWW/HTTP :: WSGI
 Topic :: Scientific/Engineering
