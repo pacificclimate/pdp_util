@@ -100,6 +100,8 @@ class PcicOidMiddleware(Openid2Middleware):
         if 'openid2rp.identifier' not in environ and self.auth_required:
             return login_401()
 
+        # FIXME: Do we never check the OpenID association expiry?
+
         # Display authentication results
         return self.app(environ, start_response)
 

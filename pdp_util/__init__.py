@@ -4,8 +4,9 @@ The pdp_util module
 from threading import Lock
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, exc, event
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import Pool
 
 from pdp_util.dbdict import DbDict, dict_to_dsn
 
@@ -57,6 +58,22 @@ def session_scope(dsn):
         raise
     finally:
         session.close()
+
+@event.listens_for(Pool, "checkout")
+def ping_connection(dbapi_connection, connection_record, connection_proxy):
+    '''This function is an event listener that "pings" (runs an inexpensive query and discards the results)
+       each time a connection is checked out from the connection pool.
+       If the ping fails, this method raises a DisconnectionError which forces the current connection to be disposed
+       See: http://docs.sqlalchemy.org/en/rel_0_9/core/events.html for further details.
+    '''
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("SELECT 1")
+    except:
+        # raise DisconnectionError - pool will try
+        # connecting again up to three times before raising.
+        raise exc.DisconnectionError()
+    cursor.close()
     
 from paste.httpexceptions import HTTPNotFound
 

@@ -4,7 +4,7 @@ pdp_util
 
 The `pdp_util` Python package is essentially a package that hosts a variety of utility modules that are required to run the `PCIC Data Portal <http://www.pacificclimate.org/data>`_. In practice, it contains a large part of the non-`Pydap <http://www.pydap.org>`_ code for the PCIC Data Portal [#non-pcic]_, while the `pdp` package pulls everything together in a single application. The utilies can be subdivided into those that support the "pcds" [#pcds]_ portal, those that support the "raster" portals, and those that serve both (i.e. globally applicable utilities).
 
-pcds Utilities
+PCDS Portal Utilities
 --------------
 
 * The `agg` module provides aggregation utilities to translate a single HTTP request into multiple OPeNDAP requests, returning a single response.
