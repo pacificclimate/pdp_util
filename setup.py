@@ -16,8 +16,6 @@ class PyTest(TestCommand):
 
 __version__ = (0, 1, 5)
 
-sw_path = 'hg+ssh://medusa.pcic.uvic.ca//home/data/projects/comp_support/software'
-
 setup(
     name="pdp_util",
     package_dir = {'pdp_util': 'pdp_util'},
@@ -28,11 +26,6 @@ setup(
     url="http://www.pacificclimate.org/",
     author="James Hiebert",
     author_email="hiebert@uvic.ca",
-#    namespace_packages=['pydap', 'pydap.handlers'],
-    dependency_links = ['{0}/PyCDS@0.0.14#egg=pycds-0.0.14'.format(sw_path),
-                        '{0}/pydap.handlers.pcic@0.0.4#egg=pydap.handlers.pcic-0.0.4'.format(sw_path),
-                        '{0}/Pydap-3.2@7298bb64638d#egg=Pydap-3.2.2'.format(sw_path),
-                        '{0}/../py_modelmeta@bb8ca8f1da61#egg=modelmeta-0.0.2'.format(sw_path)],
     install_requires=['webob',
                       'openid2rp',
                       'genshi',
@@ -45,7 +38,7 @@ setup(
                       'numpy',
                       'python-dateutil',
                       # raster portal stuff
-                      'Pydap >=3.2.1',
+                      'pydap_pdp >=3.2.1',
                       'pydap.handlers.pcic >=0.0.3',
                       'modelmeta >=0.0.2',
                       'PyYAML'
