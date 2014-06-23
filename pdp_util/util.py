@@ -27,7 +27,7 @@ def get_extension(environ):
     '''Extract the data format extension from request parameters'''
     req = Request(environ)
     form = req.params
-    if form.has_key('data-format') and form['data-format'] in ('csv', 'ascii', 'nc', 'xls'):
+    if form.has_key('data-format'):
         return form['data-format']
     else:
         return None
