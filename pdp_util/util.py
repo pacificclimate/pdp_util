@@ -3,6 +3,7 @@ from datetime import datetime
 from webob.request import Request
 
 from pdp_util.filters import form_filters
+from pydap.responses.lib import load_responses
 from pycds import CrmpNetworkGeoserver as cng
 
 def get_stn_list(sesh, sql_constraints, to_select = [cng.network_name, cng.native_id]):
@@ -24,10 +25,10 @@ def get_stn_list(sesh, sql_constraints, to_select = [cng.network_name, cng.nativ
     return q.all()
 
 def get_extension(environ):
-    '''Extract the data format extension from request parameters'''
+    '''Extract the data format extension from request parameters and check that they are supported'''
     req = Request(environ)
     form = req.params
-    if form.has_key('data-format'):
+    if form.has_key('data-format') and form['data-format'] in load_responses().keys():
         return form['data-format']
     else:
         return None
