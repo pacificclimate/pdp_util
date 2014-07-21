@@ -88,6 +88,74 @@ class EnsembleCatalog(object):
             charset='utf-8')
         return res(environ, start_response)
 
+class RasterMetadata(object):
+    '''WSGI app to query metadata from the MDDB.'''
+
+    def __init__(self, dsn):
+        '''Initialize the application
+
+           :param dsn: sqlalchemy-style dns string with database dialect and connection options. Example: "postgresql://scott:tiger@localhost/test"
+           :type config: dict
+        '''
+        def session_scope_factory():
+            return session_scope(dsn)
+        self.session_scope_factory = session_scope_factory
+
+    def __call__(self, environ, start_response):
+        req = Request(environ)
+        try:
+            request_type = req.params['request']
+        except KeyError:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'request' not specified"]
+
+        if request_type == 'GetMinMax':
+            return self.getMinMax(environ, start_response, req)
+
+        start_response('400 Bad Request', [])
+        return ["Request type not valid"]
+
+    def getMinMax(self, environ, start_response, req):
+        '''
+        Fuction to handle min/max requests to the MDDB.
+
+        Requires `id` and `var` as url parameters and returns a json object with min/max keys. Returns 400 if `id` or `var` not specified, or 404 if id/var combo not found in the MDDB
+
+        :param req: Request object containing parsed url parameters
+        :type req: webob.request.Request
+        '''
+        try:
+            unique_id = req.params['id']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'id' not specified"]
+
+        try:
+            var = req.params['var']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'var' not specified"]
+
+        with self.session_scope_factory() as sesh:
+            r = sesh.query(DataFileVariable.range_min, DataFileVariable.range_max)\
+                .join(DataFile)\
+                .filter(DataFile.unique_id == unique_id)\
+                .filter(DataFileVariable.netcdf_variable_name == var)
+
+        if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
+            start_response('404 Not Found', [])
+            return ['Unable to find requested id/var combo']
+
+        if r.count() > 1: # Result has multiple rows, panic
+            start_response('404 Not Found', [])
+            return ['Multiple matching id/var combos. This should not happen.']
+
+        mn, mx = r.first()
+        d = {'min': mn, 'max': mx }
+
+        start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
+        return dumps(d)
+
 def db_raster_catalog(session, ensemble, root_url):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
 

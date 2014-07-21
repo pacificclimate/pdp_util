@@ -3,6 +3,7 @@ import pycds
 import modelmeta
 import pdp_util
 from pdp_util.ensemble_members import EnsembleMemberLister
+from pdp_util.raster import RasterMetadata
 
 @pytest.fixture(scope="module")
 def test_session():
@@ -16,6 +17,10 @@ def conn_params():
 @pytest.fixture(scope="function")
 def ensemble_member_lister():
     return EnsembleMemberLister(modelmeta.test_dsn)
+
+@pytest.fixture(scope="function")
+def raster_metadata():
+    return RasterMetadata(modelmeta.test_dsn)
 
 @pytest.fixture(scope="function")
 def mm_session():

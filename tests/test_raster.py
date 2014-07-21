@@ -53,3 +53,34 @@ def test_ensemble_catalog(mm_dsn, config, url):
     assert body == {'tmax_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmax_monClim_PRISM_historical_run1_197101-200012.nc',
                     'pr_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/pr_monClim_PRISM_historical_run1_197101-200012.nc',
                     'tmin_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmin_monClim_PRISM_historical_run1_197101-200012.nc'}
+
+def test_raster_metadata_minmax(raster_metadata):
+    req = Request.blank('?request=GetMinMax&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
+    resp = req.get_response(raster_metadata)
+
+    assert resp.status == '200 OK'
+    assert resp.content_type == 'application/json'
+
+    stats = json.loads(resp.body)
+    assert len(stats) == 2
+    assert set(stats.keys()) == set(['max', 'min'])
+
+def test_raster_metadata_minmax_no_id(raster_metadata):
+    req = Request.blank('?request=INVALID_REQUEST_TYPE&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
+    resp = req.get_response(raster_metadata)
+    assert resp.status == '400 Bad Request'
+
+def test_raster_metadata_minmax_no_id(raster_metadata):
+    req = Request.blank('?request=GetMinMax&var=tasmax')
+    resp = req.get_response(raster_metadata)
+    assert resp.status == '400 Bad Request'
+
+def test_raster_metadata_minmax_no_var(raster_metadata):
+    req = Request.blank('?request=GetMinMax&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231')
+    resp = req.get_response(raster_metadata)
+    assert resp.status == '400 Bad Request'
+
+def test_raster_metadata_minmax_bad_id(raster_metadata):
+    req = Request.blank('?request=GetMinMax&id=NOT_A_VALID_ID&var=tasmax')
+    resp = req.get_response(raster_metadata)
+    assert resp.status == '404 Not Found'
