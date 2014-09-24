@@ -16,7 +16,6 @@ from genshi.template import TemplateLoader
 Provider = namedtuple('Provider', ['name', 'icon', 'url', 'signup'])
 providers = [
     Provider('Launchpad', 'https://login.launchpad.net/favicon.ico', 'https://login.launchpad.net/', 'https://login.launchpad.net/pBkz56vSM5432lMr/+new_account'),
-    Provider('myOpenID', 'https://www.myopenid.com/favicon.ico', 'https://www.myopenid.com/', 'https://www.myopenid.com/signup'),
     Provider('Verisign', 'http://pip.verisignlabs.com/favicon.ico', 'http://pip.verisignlabs.com', 'https://pip.verisignlabs.com/register.do'),
     Provider('Google', 'http://www.google.com/favicon.ico', 'https://www.google.com/accounts/o8/id', 'https://accounts.google.com/NewAccount'),
     Provider('Yahoo', 'http://www.yahoo.com/favicon.ico', 'http://yahoo.com/', 'https://edit.yahoo.com/registration?.src=fpctx&.intl=ca&.done=http%3A%2F%2Fca.yahoo.com%2F'),
