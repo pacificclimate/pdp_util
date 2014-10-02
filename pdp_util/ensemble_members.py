@@ -41,27 +41,6 @@ class EnsembleMemberLister(object):
         for dfv in ensemble.data_file_variables:
             yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
 
-class PrismEnsembleLister(EnsembleMemberLister):
-    def list_stuff(self, ensemble):
-        for dfv in ensemble.data_file_variables:
-            yield dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
-
-class DownscaledEnsembleLister(EnsembleMemberLister):
-    def list_stuff(self, ensemble):
-        for dfv in ensemble.data_file_variables:
-            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
-
-class VicGen1EnsembleLister(EnsembleMemberLister):
-    def list_stuff(self, ensemble):
-        for dfv in ensemble.data_file_variables:
-            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
-
-class ClimdexEnsembleLister(EnsembleMemberLister):
-    def list_stuff(self, ensemble):
-        for dfv in ensemble.data_file_variables:
-            ## FIXME
-            yield dfv.file.run.emission.short_name, dfv.file.run.model.short_name, "annual" if "_yr_" in dfv.file.unique_id else "monthly", dfv.netcdf_variable_name, dfv.file.unique_id.replace('+', '-')
-
 def dictify(a):
     if len(a) == 1 and len(a[0]) == 1:
         return a.flatten()[0]
