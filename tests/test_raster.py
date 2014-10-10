@@ -65,6 +65,17 @@ def test_raster_metadata_minmax(raster_metadata):
     assert len(stats) == 2
     assert set(stats.keys()) == set(['max', 'min'])
 
+def test_raster_metadata_minmax_w_units(raster_metadata):
+    req = Request.blank('?request=GetMinMaxWithUnits&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
+    resp = req.get_response(raster_metadata)
+
+    assert resp.status == '200 OK'
+    assert resp.content_type == 'application/json'
+
+    stats = json.loads(resp.body)
+    assert len(stats) == 3
+    assert set(stats.keys()) == set(['max', 'min', 'units'])
+
 def test_raster_metadata_minmax_no_id(raster_metadata):
     req = Request.blank('?request=INVALID_REQUEST_TYPE&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
     resp = req.get_response(raster_metadata)

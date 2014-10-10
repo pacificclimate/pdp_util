@@ -3,7 +3,7 @@ from os.path import basename
 
 from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
-from modelmeta import DataFile, DataFileVariable, EnsembleDataFileVariables, Ensemble
+from modelmeta import DataFile, DataFileVariable, EnsembleDataFileVariables, Ensemble, VariableAlias
 
 from simplejson import dumps
 from webob.request import Request
@@ -111,6 +111,8 @@ class RasterMetadata(object):
 
         if request_type == 'GetMinMax':
             return self.getMinMax(environ, start_response, req)
+        elif request_type == 'GetMinMaxWithUnits':
+            return self.getMinMaxWithUnits(environ, start_response, req)
 
         start_response('400 Bad Request', [])
         return ["Request type not valid"]
@@ -152,6 +154,48 @@ class RasterMetadata(object):
 
         mn, mx = r.first()
         d = {'min': mn, 'max': mx }
+
+        start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
+        return dumps(d)
+
+    def getMinMaxWithUnits(self, environ, start_response, req):
+        '''
+        Fuction to handle min/max requests to the MDDB.
+
+        Requires `id` and `var` as url parameters and returns a json object with min/max keys. Returns 400 if `id` or `var` not specified, or 404 if id/var combo not found in the MDDB
+
+        :param req: Request object containing parsed url parameters
+        :type req: webob.request.Request
+        '''
+        try:
+            unique_id = req.params['id']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'id' not specified"]
+
+        try:
+            var = req.params['var']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'var' not specified"]
+
+        with self.session_scope_factory() as sesh:
+            r = sesh.query(DataFileVariable.range_min, DataFileVariable.range_max, VariableAlias.units)\
+                .join(DataFile)\
+                .join(VariableAlias)\
+                .filter(DataFile.unique_id == unique_id)\
+                .filter(DataFileVariable.netcdf_variable_name == var)
+
+        if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
+            start_response('404 Not Found', [])
+            return ['Unable to find requested id/var combo']
+
+        if r.count() > 1: # Result has multiple rows, panic
+            start_response('404 Not Found', [])
+            return ['Multiple matching id/var combos. This should not happen.']
+
+        mn, mx, units = r.first()
+        d = {'min': mn, 'max': mx , 'units': units}
 
         start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
         return dumps(d)
