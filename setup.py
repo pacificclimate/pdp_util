@@ -14,7 +14,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)                                                                        
 
-__version__ = (0, 2, 2)
+__version__ = (0, 2, 3)
 
 setup(
     name="pdp_util",
@@ -40,7 +40,7 @@ setup(
                       # raster portal stuff
                       'pydap_pdp >=3.2.1',
                       'pydap.handlers.pcic >=0.0.3',
-                      'modelmeta >=0.0.2',
+                      'modelmeta >=0.0.5',
                       'PyYAML'
                       ],
     tests_require=['pytest',

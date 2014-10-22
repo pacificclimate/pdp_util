@@ -5,7 +5,7 @@ Pillow==2.4.0
 PyCDS==0.0.17
 PyYAML==3.11
 WebOb==1.4
-modelmeta==0.0.3
+modelmeta==0.0.5
 numpy==1.8.1
 openid2rp==1.12
 pydap-pdp==3.2.2
