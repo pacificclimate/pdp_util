@@ -109,14 +109,10 @@ class PcdsNetworkIndex(PcdsIndex):
         '''Runs a database query and returns a list of (``network_name``, ``network_description``) pairs for which there exists either climo or raw data.
         '''
         with self.session_scope_factory() as sesh:
-            query = sesh.query(Network.name, Network.long_name, Variable.cell_method).join(Variable).join(VarsPerHistory).distinct().order_by(Network.name)
-
-            # _could_ do this in a where clause, but there seem to be no good cross database regex queries (runs on Postgres, but not sqlite)
-            # FIXME: this is super slow. Probably too much data transfer
-            pattern = '(within|over)'
-            elements = [ (net_name, net_long_name) for net_name, net_long_name, cell_method in query.all() if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method))) ]
-        elements = list(set(elements))
-        elements.sort()
+            # Join to vars_per_history to make sure data exists for stations in each network, but don't actually return anything associated with that table
+            query = sesh.query(Network.name, Network.long_name).join(Variable).\
+                join(VarsPerHistory).distinct().order_by(Network.name)
+            elements = query.all()
         return elements
 
 class PcdsStationIndex(PcdsIndex):
@@ -142,15 +138,10 @@ class PcdsStationIndex(PcdsIndex):
         '''
         network_name = self.args['network']
         with self.session_scope_factory() as sesh:
-            query = sesh.query(Station.native_id, History.station_name, Variable.cell_method).join(History).join(Network).join(Variable).join(VarsPerHistory)\
-              .filter(Network.name == network_name)\
-              .distinct().order_by(Station.native_id)
-
-            pattern = '(within|over)'
-            # FIXME: this is super slow. Probably too much data transfer
-            elements = [ (native_id, station_name) for native_id, station_name, cell_method in query.all() \
-                         if ~(self.args['is_climo'] ^ bool(re.search(pattern, cell_method)))]
-        elements = list(set(elements))
-        elements.sort()
+            # Join to vars_per_history to make sure data exists for each station, but don't actually return anything associated with that table
+            query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).\
+                filter(Network.name == network_name).\
+                distinct().order_by(Station.native_id)
+            elements = query.all()
         return elements
 
