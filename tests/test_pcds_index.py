@@ -3,6 +3,7 @@ from pkg_resources import resource_filename
 
 from webob.request import Request
 from bs4 import BeautifulSoup
+from sqlalchemy import or_
 
 from pdp_util.pcds_index import PcdsIsClimoIndex, PcdsNetworkIndex, PcdsStationIndex
 from pycds import *
@@ -15,6 +16,10 @@ def make_common_assertions(resp):
 
 def test_climo_index(conn_params):
     app = PcdsIsClimoIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params) #FIXME: template path is fragile
+
+    assert app.get_elements() == (('climo', 'Climatological calculations'),
+                                  ('raw', 'Raw measurements from participating networks'))
+
     req = Request.blank('')
     resp = req.get_response(app)
     make_common_assertions(resp)
@@ -24,6 +29,15 @@ def test_climo_index(conn_params):
     
 def test_network_index(conn_params):
     app = PcdsNetworkIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=False) #FIXME: template path is fragile
+
+    assert app.get_elements() == [('AGRI', 'BC Ministry of Agriculture'),
+                                  ('ARDA', 'Agricultural and Rural Development Act Network'),
+                                  ('EC', 'Environment Canada (Canadian Daily Climate Data 2007)'),
+                                  ('EC_raw', 'Environment Canada (raw observations from "Climate Data Online")'),
+                                  ('ENV-ASP', 'BC Ministry of Environment - Automated Snow Pillow Network'),
+                                  ('FLNRO-WMB', 'BC Ministry of Forests, Lands, and Natural Resource Operations - Wild Fire Managment Branch'),
+                                  ('MoTIe', 'Ministry of Transportation and Infrastructure (electronic)')]
+
     req = Request.blank('/pcds/raw/')
     resp = req.get_response(app)
     make_common_assertions(resp)
@@ -35,7 +49,11 @@ def test_network_index(conn_params):
     assert "Environment Canada (Canadian Daily Climate Data 2007)" in resp.body
 
 def test_station_index(conn_params):
+
     app = PcdsStationIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=False, network='AGRI') #FIXME: template path is fragile
+
+    assert app.get_elements() == [('de107', 'Deep Creek')]
+
     req = Request.blank('/pcds/raw/AGRI/')
     resp = req.get_response(app)
     make_common_assertions(resp)
@@ -46,3 +64,26 @@ def test_station_index(conn_params):
     assert "de107/" in resp.body
     assert "Deep Creek" in resp.body
 
+def test_station_index_for_climatologies(conn_params, test_session):
+
+    # Remove the climatological variables from the database to test that they *don't* show up in the listing
+    row_count = test_session.query(Variable).filter(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over'))).delete('fetch')
+    print("Temporarily removed {} climatological variables for the test", row_count)
+    assert row_count > 0
+
+    app = PcdsStationIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=True, network='AGRI')
+
+    assert app.get_elements() == []
+
+    req = Request.blank('/pcds/raw/AGRI/')
+    resp = req.get_response(app)
+    make_common_assertions(resp)
+
+    soup = BeautifulSoup(resp.body)
+
+    assert "Stations for network AGRI" in soup.title.string
+    # We don't have any climatological variables in the test database, so no stations should show up
+    assert "de107/" not in resp.body
+    assert "Deep Creek" not in resp.body
+
+    test_session.rollback()
