@@ -104,6 +104,34 @@ class PcicOidMiddleware(Openid2Middleware):
         # Display authentication results
         return self.app(environ, start_response)
 
+class PcicAuthMiddleware(object):
+    '''
+    A WSGI filter which handles OAuth identification
+    '''
+    def __init__(self, app, auth_required=True):
+        '''
+        Initialize the authorization middleware
+
+        :param app: WSGI application to be wrapped
+        :param auth_required: if True, lack of authorization will return a 401 if False
+        :type auth_required: bool
+        '''
+        self.app = app
+        self.auth_required = auth_required
+
+    def __call__(self, environ, start_response):
+        session = environ.get('beaker.session', {})
+        print session.id
+        if self.auth_required:
+            if 'email' in session:
+                return self.app(environ, start_response)
+            else:
+                # FIXME: redirect to login/register with 'next' or 'return_to'
+                start_response('401 Permission Denied', [('Content-type','text/plain')])
+                return ['Authentication Required']
+
+        return self.app(environ, start_response)
+
 def login_html(tmpl_dir, **kwargs):
     '''Dispatches to the template renderer to generate the HTML of the login page
     '''
