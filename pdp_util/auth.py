@@ -106,14 +106,14 @@ class PcicOidMiddleware(Openid2Middleware):
 
 class PcicAuthMiddleware(object):
     '''
-    A WSGI filter which handles OAuth identification
+    A WSGI middleware to enforce user authorization on a wrapped app
     '''
     def __init__(self, app, auth_required=True):
         '''
         Initialize the authorization middleware
 
         :param app: WSGI application to be wrapped
-        :param auth_required: if True, lack of authorization will return a 401 if False
+        :param auth_required: if True, lack of authorization will return a 401. If False, no authorization is enforced.
         :type auth_required: bool
         '''
         self.app = app
