@@ -1,6 +1,5 @@
-import re
-
 from genshi.template import TemplateLoader
+from sqlalchemy import or_
 
 import pydap.lib
 from pdp_util import session_scope
@@ -138,10 +137,18 @@ class PcdsStationIndex(PcdsIndex):
         '''
         network_name = self.args['network']
         with self.session_scope_factory() as sesh:
+
             # Join to vars_per_history to make sure data exists for each station, but don't actually return anything associated with that table
-            query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).\
-                filter(Network.name == network_name).\
-                distinct().order_by(Station.native_id)
+            if self.args['is_climo']:
+                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
+                    filter(Network.name == network_name).\
+                    filter(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over'))).\
+                    distinct().order_by(Station.native_id)
+            else:
+                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).\
+                    filter(Network.name == network_name).\
+                    distinct().order_by(Station.native_id)
+
             elements = query.all()
         return elements
 
