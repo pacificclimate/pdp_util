@@ -2,7 +2,7 @@ Beaker==1.6.4
 Genshi==0.7
 Paste==1.7.5.1
 Pillow==2.4.0
-PyCDS==0.0.17
+PyCDS==0.0.20
 PyYAML==3.11
 WebOb==1.4
 modelmeta==0.0.5

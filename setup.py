@@ -34,7 +34,7 @@ setup(
                       'pillow',
                       'pytz',
                       'simplejson',
-                      'pycds >=0.0.14',
+                      'pycds >=0.0.20',
                       'numpy',
                       'python-dateutil',
                       # raster portal stuff

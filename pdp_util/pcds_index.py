@@ -1,5 +1,5 @@
 from genshi.template import TemplateLoader
-from sqlalchemy import or_
+from sqlalchemy import or_, not_
 
 import pydap.lib
 from pdp_util import session_scope
@@ -145,8 +145,9 @@ class PcdsStationIndex(PcdsIndex):
                     filter(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over'))).\
                     distinct().order_by(Station.native_id)
             else:
-                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).\
+                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
                     filter(Network.name == network_name).\
+                    filter(not_(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over')))).\
                     distinct().order_by(Station.native_id)
 
             elements = query.all()

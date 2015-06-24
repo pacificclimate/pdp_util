@@ -3,7 +3,7 @@ from pkg_resources import resource_filename
 
 from webob.request import Request
 from bs4 import BeautifulSoup
-from sqlalchemy import or_
+
 
 from pdp_util.pcds_index import PcdsIsClimoIndex, PcdsNetworkIndex, PcdsStationIndex
 from pycds import *
@@ -64,26 +64,23 @@ def test_station_index(conn_params):
     assert "de107/" in resp.body
     assert "Deep Creek" in resp.body
 
-def test_station_index_for_climatologies(conn_params, test_session):
+    assert "de107climo/" not in resp.body
+    assert 'Deep "Climo Station" Creek' not in resp.body
 
-    # Remove the climatological variables from the database to test that they *don't* show up in the listing
-    row_count = test_session.query(Variable).filter(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over'))).delete('fetch')
-    print("Temporarily removed {} climatological variables for the test", row_count)
-    assert row_count > 0
+def test_station_index_for_climatologies(conn_params, test_session):
 
     app = PcdsStationIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=True, network='AGRI')
 
-    assert app.get_elements() == []
+    assert app.get_elements() == [('de107climo', 'Deep "Climo Station" Creek')]
 
-    req = Request.blank('/pcds/raw/AGRI/')
+    req = Request.blank('/pcds/climo/AGRI/')
     resp = req.get_response(app)
     make_common_assertions(resp)
 
     soup = BeautifulSoup(resp.body)
 
     assert "Stations for network AGRI" in soup.title.string
-    # We don't have any climatological variables in the test database, so no stations should show up
     assert "de107/" not in resp.body
     assert "Deep Creek" not in resp.body
-
-    test_session.rollback()
+    assert "de107climo/" in resp.body
+    assert 'Deep "Climo Station" Creek' in resp.body
