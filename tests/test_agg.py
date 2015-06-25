@@ -1,4 +1,5 @@
 import os
+import string
 from datetime import datetime
 from random import random
 from tempfile import NamedTemporaryFile
@@ -89,3 +90,43 @@ def test_ziperator():
                     assert x.read() == ''.join(content)
             
         os.remove(f.name)
+
+@pytest.mark.local_only
+@pytest.mark.parametrize(('size'), [
+        (50 * 1024 ** 2), # 50MB
+#        (1 * 1024 ** 3), # 1GB
+#        (2 * 1024 ** 3), # 2GB
+#        (4 * 1024 ** 3), # 4GB
+        ])
+def test_large_ziperator(size):
+
+    # def random_content(n):
+    #     from math import ceil
+    #     base = ''.join(choice(string.ascii_letters + string.digits) for _ in range(1024)) + '\n'
+    #     lines = int(ceil(n / 1024))
+    #     for _ in range(lines):
+    #         to_change = choice(string.ascii_letters + string.digits)
+    #         yield base.replace(to_change, '0')
+
+    def random_content(n):
+        from math import ceil
+        base = os.urandom(1024) + '\n'
+        lines = int(ceil(n / 1024))
+        for _ in range(lines):
+            yield base.replace(os.urandom(1), os.urandom(1))
+
+    z = ziperator([('file1.txt', random_content(size))])
+
+    with NamedTemporaryFile('w', delete=False) as f:
+        for line in z:
+            f.write(line)
+        f.flush()
+        with ZipFile(f.name) as z:
+            # Check that it's a valid archive
+            assert z.testzip() is None
+            # Check that the names list
+            assert set(z.namelist()) == set('file1.txt')
+            with z.open('file1.txt') as x:
+                  assert x.read()
+
+    os.remove(f.name)
