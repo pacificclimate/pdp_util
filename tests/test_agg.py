@@ -125,7 +125,7 @@ def test_large_ziperator(size):
             # Check that it's a valid archive
             assert z.testzip() is None
             # Check that the names list
-            assert set(z.namelist()) == set('file1.txt')
+            assert set(z.namelist()) == set(['file1.txt'])
             with z.open('file1.txt') as x:
                   assert x.read()
 
