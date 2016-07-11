@@ -55,3 +55,21 @@ def mm_session():
 @pytest.fixture(scope="function")
 def mm_dsn():
     return modelmeta.test_dsn
+
+
+@pytest.yield_fixture(scope='function')
+def test_session_with_unpublished(test_session):
+    unpub = pycds.Network(name='MoAG')
+    stns = [
+        pycds.Station(
+            native_id='does not matter', network=unpub,
+                histories=[
+                    pycds.History(
+                        station_name='Does Not Matter',
+                        the_geom='SRID=4326;POINT(-140.866667 62.416667)'
+                    )
+                ]
+        )
+    ]
+    test_session.add_all(stns + [unpub])
+    yield test_session

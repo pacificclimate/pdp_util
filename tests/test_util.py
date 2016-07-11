@@ -67,3 +67,9 @@ def test_get_extension_bad():
     # data-format not in the request params
     req = Request.blank('')
     assert get_extension(req.environ) == None
+
+
+def test_unpublished(test_session_with_unpublished):
+    sesh = test_session_with_unpublished
+    stns = get_stn_list(sesh, [Network.name == 'MoAg'])
+    assert len(stns) == 0

@@ -21,6 +21,7 @@ def get_stn_list(sesh, sql_constraints, to_select = [cng.network_name, cng.nativ
         q = sesh.query(to_select)
     for constraint in sql_constraints:
         q = q.filter(constraint)
+    q = q.filter(Network.publish == True)
 
     return q.all()
 
