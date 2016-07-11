@@ -4,7 +4,7 @@ from webob.request import Request
 
 from pdp_util.filters import form_filters
 from pydap.responses.lib import load_responses
-from pycds import CrmpNetworkGeoserver as cng
+from pycds import Network, CrmpNetworkGeoserver as cng
 
 def get_stn_list(sesh, sql_constraints, to_select = [cng.network_name, cng.native_id]):
     '''Translate station filters into a list of stations

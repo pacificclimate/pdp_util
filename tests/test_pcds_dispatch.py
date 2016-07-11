@@ -14,10 +14,12 @@ def make_common_assertions(resp):
     if resp.content_length:
         assert resp.content_length > 0
 
-@pytest.fixture(scope="module")
+
+@pytest.fixture(scope="function")
 def the_app(conn_params):
     kwargs = {'pydap_root': '/tmp/', 'app_root': '/', 'templates': resource_filename('pdp_util', 'templates'), 'ol_path': '', 'conn_params': conn_params}
     return PcdsDispatcher(**kwargs)
+
 
 def test_can_initialize(the_app):
     assert True # We have the fixture, so clearly this is true

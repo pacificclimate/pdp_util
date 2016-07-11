@@ -1,4 +1,4 @@
 SQLAlchemy==0.8.6
 pytest
 beautifulsoup4
-pysqlite==2.6.3 #Not really, but pycds test_session needs this, remove once added to pycds install reqs
+testing.postgresql

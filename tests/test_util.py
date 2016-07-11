@@ -1,18 +1,18 @@
 from urllib import urlencode
 from datetime import datetime
 
-from pycds import CrmpNetworkGeoserver as cng
+from pycds import Network, CrmpNetworkGeoserver as cng
 from pdp_util.util import get_stn_list, get_clip_dates, get_extension
 
 import pytest
 from webob.request import Request
 
-def test_get_stn_list(test_session):
-    stns = get_stn_list(test_session, [])
+def test_get_stn_list(test_session_with_data):
+    stns = get_stn_list(test_session_with_data, [])
     assert len(stns) == 50
 
 @pytest.mark.parametrize(('constraints', 'to_select', 'expected'), [
-    (["network_name == 'EC_raw'"],
+    ([Network.name == 'EC_raw'],
      cng.native_id,
      ['1046332', '1126150', '1106200', '1022795']
     ),
@@ -26,12 +26,12 @@ def test_get_stn_list(test_session):
      cng.network_name,
      ['FLNRO-WMB', 'MoTIe', 'EC_raw'])
     ])
-def test_get_stn_list_with_filter(test_session, constraints, to_select, expected):
-    stns = get_stn_list(test_session, constraints, to_select)
+def test_get_stn_list_with_filter(test_session_with_data, constraints, to_select, expected):
+    stns = get_stn_list(test_session_with_data, constraints, to_select)
     assert set(expected) == set([x[0] for x in stns])
     
-def test_single_column_select(test_session):
-    stns = get_stn_list(test_session, [], cng.station_id)
+def test_single_column_select(test_session_with_data):
+    stns = get_stn_list(test_session_with_data, [], cng.station_id)
     assert isinstance(stns[0][0], int)
 
 def test_get_clip_dates():
