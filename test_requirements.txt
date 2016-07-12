@@ -1,4 +1,4 @@
 SQLAlchemy==0.8.6
-pytest
+pytest>=2.9
 beautifulsoup4
 testing.postgresql
