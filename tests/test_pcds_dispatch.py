@@ -8,6 +8,7 @@ import pytest
 from webob.request import Request
 from bs4 import BeautifulSoup
 
+
 def make_common_assertions(resp):
     assert resp.status == '200 OK'
     assert resp.content_type == 'text/html'
@@ -43,7 +44,7 @@ def test_network_listing(the_app, url):
 
     soup = BeautifulSoup(resp.body)
     assert "PCDS: Participating CRMP Networks" in resp.body
-    for network in ['EC', 'ENV-ASP', 'ARDA', 'EC_raw', 'FLNRO-WMB', 'AGRI', 'MoTIe']:
+    for network in ['EC', 'ARDA', 'EC_raw', 'FLNRO-WMB', 'AGRI', 'MoTIe']:
         assert network in resp.body
     assert soup.title.string == "PCDS: Participating CRMP Networks"
     assert "Environment Canada (Canadian Daily Climate Data 2007)" in resp.body
@@ -61,7 +62,7 @@ def test_station_listing(the_app, url):
     make_common_assertions(resp)
 
     soup = BeautifulSoup(resp.body)
-    for station_name in ['1022795', '1046332', '1106200', '1126150']:
+    for station_name in ['1046332', '1106200', '1126150']:
         assert station_name in resp.body
         soup.title.string == 'PCIC Data Portal: Stations for network EC_raw'
         

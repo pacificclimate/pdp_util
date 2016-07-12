@@ -8,10 +8,10 @@ import json
 from pdp_util.counts import CountStationsApp, CountRecordLengthApp
 
 @pytest.mark.parametrize(('filters', 'expected'), [
-    ({'network-name': 'EC_raw'}, 4),
-    ({'from-date': '2000/01/01', 'to-date': '2000/01/31'}, 14),
-    ({'to-date': '1965/01/01'}, 3),
-    ({'input-freq': '1-hourly'}, 3),
+    ({'network-name': 'EC_raw'}, 3),
+    ({'from-date': '2000/01/01', 'to-date': '2000/01/31'}, 15),
+    ({'to-date': '1965/01/01'}, 5),
+    ({'input-freq': '1-hourly'}, 6),
     ({'only-with-climatology': 'only-with-climatology'}, 14),
     # We _should_ ignore a bad value for a filter (or return a HTTP BadRequest?)
     ({'only-with-climatology': 'bad-value'}, 50)
@@ -20,6 +20,7 @@ from pdp_util.counts import CountStationsApp, CountRecordLengthApp
     ])
 def test_count_stations_app(conn_params, filters, expected):
     app = CountStationsApp(conn_params)
+
     req = Request.blank('?' + urlencode(filters))
     resp = req.get_response(app)
     assert resp.status == '200 OK'
@@ -27,6 +28,7 @@ def test_count_stations_app(conn_params, filters, expected):
     assert 'stations_selected' in resp.body
     data = json.loads(resp.body)
     assert data['stations_selected'] == expected
+
 
 def test_count_record_length_app(conn_params):
     app = CountRecordLengthApp(conn_params, 3000)
@@ -41,8 +43,8 @@ def test_count_record_length_app(conn_params):
     data = json.loads(resp.body)
     assert 'record_length' in data
     assert 'climo_length' in data
-    assert data['record_length'] == 2045
-    assert data['climo_length'] == 360
+    assert data['record_length'] == 1969
+    assert data['climo_length'] == 412
 
 
 def test_filter_dates_on_record_length_app(conn_params):

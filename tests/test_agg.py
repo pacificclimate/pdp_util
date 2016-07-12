@@ -17,15 +17,20 @@ stns = [('ARDA', '115084'), ('EC_raw', '1046332'), ('FLNRO-WMB', '369')]
 def test_can_instantiate(test_session, conn_params):
     app = PcdsZipApp(conn_params, test_session)
 
-def test_metadata_index_responder(test_session):
-    response_iter = metadata_index_responder(test_session, 'FLNRO-WMB', False)
+
+def test_metadata_index_responder(test_session_with_data):
+    response_iter = metadata_index_responder(
+        test_session_with_data, 'FLNRO-WMB', False)
     response_text = ''.join([line for line in response_iter])
-    assert response_text.startswith('variables\nvariable, standard_name, cell_method, unit\n')
-    lines = ['precipitation, lwe_thickness_of_precipitation_amount, time: sum, mm',
-             'temperature, air_temperature, time: point, celsius',
-             'relative_humidity, relative_humidity, time: mean, %',
-             'wind_speed, wind_speed, time: mean, m s-1',
-             'wind_direction, wind_from_direction, time: mean, degree']
+    assert response_text.startswith(
+        'variables\nvariable, standard_name, cell_method, unit\n')
+    lines = [
+        'precipitation, lwe_thickness_of_precipitation_amount, time: sum, mm',
+        'temperature, air_temperature, time: point, celsius',
+        'relative_humidity, relative_humidity, time: mean, %',
+        'wind_speed, wind_speed, time: mean, m s-1',
+        'wind_direction, wind_from_direction, time: mean, degree'
+    ]
     for line in lines:
         assert line in response_text
 

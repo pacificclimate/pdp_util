@@ -34,7 +34,7 @@ def test_network_index(conn_params):
                                   ('ARDA', 'Agricultural and Rural Development Act Network'),
                                   ('EC', 'Environment Canada (Canadian Daily Climate Data 2007)'),
                                   ('EC_raw', 'Environment Canada (raw observations from "Climate Data Online")'),
-                                  ('ENV-ASP', 'BC Ministry of Environment - Automated Snow Pillow Network'),
+                                  ('ENV-AQN', 'BC Ministry of Environment - Air Quality Network'),
                                   ('FLNRO-WMB', 'BC Ministry of Forests, Lands, and Natural Resource Operations - Wild Fire Managment Branch'),
                                   ('MoTIe', 'Ministry of Transportation and Infrastructure (electronic)')]
 
@@ -50,7 +50,9 @@ def test_network_index(conn_params):
 
 def test_station_index(conn_params):
 
-    app = PcdsStationIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=False, network='AGRI') #FIXME: template path is fragile
+    app = PcdsStationIndex(
+        app_root='/', templates=resource_filename('pdp_util', 'templates'),
+        conn_params=conn_params, is_climo=False, network='AGRI')
 
     assert app.get_elements() == [('de107', 'Deep Creek')]
 
@@ -67,20 +69,21 @@ def test_station_index(conn_params):
     assert "de107climo/" not in resp.body
     assert 'Deep "Climo Station" Creek' not in resp.body
 
+
 def test_station_index_for_climatologies(conn_params, test_session):
 
-    app = PcdsStationIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=True, network='AGRI')
+    app = PcdsStationIndex(
+        app_root='/', templates=resource_filename('pdp_util', 'templates'),
+        conn_params=conn_params, is_climo=True, network='FLNRO-WMB')
 
-    assert app.get_elements() == [('de107climo', 'Deep "Climo Station" Creek')]
+    assert app.get_elements() == [('13', 'ZZ KLANAWA'), ('661', 'ZZ TASEKO')]
 
-    req = Request.blank('/pcds/climo/AGRI/')
+    req = Request.blank('/pcds/climo/FLNRO-WMB/')
     resp = req.get_response(app)
     make_common_assertions(resp)
 
     soup = BeautifulSoup(resp.body)
 
-    assert "Stations for network AGRI" in soup.title.string
-    assert "de107/" not in resp.body
-    assert "Deep Creek" not in resp.body
-    assert "de107climo/" in resp.body
-    assert 'Deep "Climo Station" Creek' in resp.body
+    assert "Stations for network FLNRO-WMB" in soup.title.string
+    assert "13/" in resp.body
+    assert 'ZZ TASEKO' in resp.body
