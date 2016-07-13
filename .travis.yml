@@ -1,9 +1,8 @@
 language: python
 python:
   - 2.7
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install -qq libspatialite-dev
+addons:
+  postgresql: "9.3"
 install:
   - pip install -i http://tools.pacificclimate.org/pypiserver/ -r requirements.txt -r test_requirements.txt
   - pip install .
