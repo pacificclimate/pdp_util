@@ -55,6 +55,7 @@ def authorized_session(request):
     request.addfinalizer(fin)
     return auth_app
 
+@pytest.mark.skip(reason="OpenID was shut down in 2015")
 def test_redirect(authorized_session):
     req = Request.blank('/?openid_identifier=https://www.google.com/accounts/o8/id')
     resp = req.get_response(authorized_session)

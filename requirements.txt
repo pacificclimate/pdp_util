@@ -9,7 +9,7 @@ modelmeta==0.0.5
 numpy==1.8.1
 openid2rp==1.12
 pydap-pdp==3.2.2
-pydap.handlers.pcic==0.0.4
+pydap.handlers.pcic==0.0.7
 python-dateutil==2.2
 pytz==2014.4
 simplejson==3.5.2
