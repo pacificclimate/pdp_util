@@ -49,10 +49,10 @@ class CountRecordLengthApp(object):
         with self.session_scope_factory() as sesh:
             stns = [stn[0] for stn in get_stn_list(sesh, filters, cng.station_id)]
 
-        rv = length_of_return_dataset(sesh, stns, sdate, edate)
-        obs_count = int(rv[0] if rv[0] else 0)
-        rv = length_of_return_climo(sesh, stns)
-        climo_count = int(rv[0] if rv[0] else 0)
+            rv = length_of_return_dataset(sesh, stns, sdate, edate)
+            obs_count = int(rv[0] if rv[0] else 0)
+            rv = length_of_return_climo(sesh, stns)
+            climo_count = int(rv[0] if rv[0] else 0)
 
         status = '200 OK'
         response_headers = [('Content-type', 'application/json; charset=utf-8')]
@@ -69,11 +69,11 @@ def length_of_return_dataset(sesh, stn_ids, sdate=None, edate=None):
         edate = edate.replace(hour=0, minute=0, second=0, microsecond=0) + relativedelta(months=1)
         q = q.filter(ObsCountPerMonthHistory.date_trunc <= edate)
 
-    return sesh.execute(q).fetchone()
+    return sesh.execute(q).first()
 
 def length_of_return_climo(sesh, stn_ids):
     q = sesh.query(func.sum(ClimoObsCount.count)).join(History, History.id == ClimoObsCount.history_id).filter(History.station_id.in_(stn_ids))
-    return sesh.execute(q).fetchone()
+    return sesh.execute(q).first()
 
 if __name__ == '__main__':
     port = 8555
