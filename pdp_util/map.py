@@ -3,8 +3,6 @@
 
 from genshi.template import TemplateLoader
 
-from pdp_util.auth import providers
-
 class MapApp(object):
     def __init__(self, **kwargs):
         '''Initialize the MapApp
@@ -34,7 +32,6 @@ class MapApp(object):
         template = 'map.html'
         context = {
             'environ': environ,
-            'providers': providers,
         }
         context.update(self.options)
         return self.render(**context)
