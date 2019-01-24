@@ -5,6 +5,7 @@ from pycds import CrmpNetworkGeoserver as cng
 from pdp_util.util import get_stn_list, get_clip_dates, get_extension
 
 import pytest
+from sqlalchemy import text
 from webob.request import Request
 
 def test_get_stn_list(test_session):
@@ -12,7 +13,7 @@ def test_get_stn_list(test_session):
     assert len(stns) == 50
 
 @pytest.mark.parametrize(('constraints', 'to_select', 'expected'), [
-    (["network_name == 'EC_raw'"],
+    ([text("network_name == 'EC_raw'")],
      cng.native_id,
      ['1046332', '1126150', '1106200', '1022795']
     ),

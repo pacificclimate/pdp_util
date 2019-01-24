@@ -14,7 +14,7 @@ def make_common_assertions(resp):
     if resp.content_length:
         assert resp.content_length > 0
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def the_app(conn_params):
     kwargs = {'pydap_root': '/tmp/', 'app_root': '/', 'templates': resource_filename('pdp_util', 'templates'), 'ol_path': '', 'conn_params': conn_params}
     return PcdsDispatcher(**kwargs)
@@ -28,7 +28,7 @@ def test_climo_listing(the_app):
     resp = req.get_response(the_app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     assert "Climatological calculations" in resp.body
     assert "raw/" in resp.body
     assert soup.title.string == "PCDS: PCDS Data"
@@ -39,7 +39,7 @@ def test_network_listing(the_app, url):
     resp = req.get_response(the_app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     assert "PCDS: Participating CRMP Networks" in resp.body
     for network in ['EC', 'ENV-ASP', 'ARDA', 'EC_raw', 'FLNRO-WMB', 'AGRI', 'MoTIe']:
         assert network in resp.body
@@ -58,7 +58,7 @@ def test_station_listing(the_app, url):
     resp = req.get_response(the_app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     for station_name in ['1022795', '1046332', '1106200', '1126150']:
         assert station_name in resp.body
         soup.title.string == 'PCIC Data Portal: Stations for network EC_raw'
@@ -69,7 +69,7 @@ def test_bad_network(the_app):
     resp = req.get_response(the_app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     assert soup.title.string == 'PCDS: Stations for network network_does_not_exist'
     
     stuff = soup.find_all('tr')
@@ -89,7 +89,7 @@ def dont_test_station_listing(the_app, test_session, url, monkeypatch):
     resp = req.get_response(the_app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
 
 def test_dispatch_to_station_listing(the_app):
     path = '/raw/EC/1106200/'
