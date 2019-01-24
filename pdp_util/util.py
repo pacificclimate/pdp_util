@@ -14,11 +14,10 @@ def get_stn_list(sesh, sql_constraints, to_select = [cng.network_name, cng.nativ
        :param sql_constraints: A list of filters which can filter a sqlalchemy :py:class:`Query` object. This can be a precompiled sqlalchemy.sql.expression or the string of a WHERE clause.
        :param to_select: A list of ORM columns to select
     '''
-    try:
-        len(to_select)
-        q = sesh.query(*to_select)
-    except:
-        q = sesh.query(to_select)
+    # to_select must be a list
+    if not hasattr(to_select, '__len__'):
+        to_select = [to_select]
+    q = sesh.query(*to_select)
     for constraint in sql_constraints:
         q = q.filter(constraint)
 
