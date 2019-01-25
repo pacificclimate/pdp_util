@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import json
 from webob.request import Request
 from sqlalchemy import func
@@ -22,15 +24,16 @@ class CountStationsApp(object):
 
         filters = validate_vars(environ)
 
-        if 'sesh' in environ:
-            stns = get_stn_list(environ.get('sesh'), filters)
-        else:
-            if not self.session_scope_factory:
-                raise RuntimeError("%s called with neither a database session "
-                                   "factory nor an available session."
-                                   % self.__name__)
-            with self.session_scope_factory() as sesh:
-                stns = get_stn_list(sesh, filters)
+        sesh = environ.get('sesh', None)
+
+        @contextmanager
+        def dummy_context():
+            yield sesh
+
+        with self.session_scope_factory() if not sesh \
+                else dummy_context() as sesh:
+
+            stns = get_stn_list(sesh, filters)
 
         return json.dumps({'stations_selected': len(stns)})
 
@@ -60,16 +63,16 @@ class CountRecordLengthApp(object):
         filters = validate_vars(environ)
         sdate, edate = get_clip_dates(environ)
 
-        if 'sesh' in environ:
-            counts = get_counts(environ.get('sesh'), filters, sdate, edate)
-        else:
-            if not self.session_scope_factory:
-                raise RuntimeError("%s called with neither a database session "
-                                   "factory nor an available session."
-                                   % self.__name__)
+        sesh = environ.get('sesh', None)
 
-            with self.session_scope_factory() as sesh:
-                counts = get_counts(sesh, filters, sdate, edate)
+        @contextmanager
+        def dummy_context():
+            yield sesh
+
+        with self.session_scope_factory() if not sesh \
+                else dummy_context() as sesh:
+
+            counts = get_counts(sesh, filters, sdate, edate)
 
         status = '200 OK'
         response_headers = [('Content-type', 'application/json; charset=utf-8')]

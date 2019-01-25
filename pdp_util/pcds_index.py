@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from genshi.template import TemplateLoader
 from sqlalchemy import or_, not_
 
@@ -34,13 +36,23 @@ class PcdsIndex(object):
         status = '200 OK'
         response_headers = [('Content-type', 'text/html')]
         start_response(status, response_headers)
+
+        sesh = environ.get('sesh', None)
+
+        @contextmanager
+        def dummy_context():
+            yield sesh
+
+        with self.session_scope_factory() if not sesh \
+                else dummy_context() as sesh:
         
-        params = self.args
-        params.update({
-            'environ': environ,
-            'elements': self.get_elements(environ.get('sesh', None)),
-            'version': str(pydap.lib.__version__)
+            params = self.args
+            params.update({
+                'environ': environ,
+                'elements': self.get_elements(sesh),
+                'version': str(pydap.lib.__version__)
             })
+
         return self.render(**params)
 
     def render(self, **kwargs):
