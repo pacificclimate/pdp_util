@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from genshi.template import TemplateLoader
 from sqlalchemy import or_, not_
 
@@ -34,13 +36,23 @@ class PcdsIndex(object):
         status = '200 OK'
         response_headers = [('Content-type', 'text/html')]
         start_response(status, response_headers)
+
+        sesh = environ.get('sesh', None)
+
+        @contextmanager
+        def dummy_context():
+            yield sesh
+
+        with self.session_scope_factory() if not sesh \
+                else dummy_context() as sesh:
         
-        params = self.args
-        params.update({
-            'environ': environ,
-            'elements': self.get_elements(),
-            'version': str(pydap.lib.__version__)
+            params = self.args
+            params.update({
+                'environ': environ,
+                'elements': self.get_elements(sesh),
+                'version': str(pydap.lib.__version__)
             })
+
         return self.render(**params)
 
     def render(self, **kwargs):
@@ -56,7 +68,7 @@ class PcdsIndex(object):
         stream = tmpl.generate(**kwargs)
         return stream.render('html', doctype='html', encoding='UTF-8')
 
-    def get_elements(self):
+    def get_elements(self, sesh):
         '''Stub function
 
            :raises: NotImplementedError
@@ -81,7 +93,7 @@ class PcdsIsClimoIndex(PcdsIndex):
         kwargs = dict(list(defaults.items()) + list(kwargs.items()))
         PcdsIndex.__init__(self, **kwargs)
 
-    def get_elements(self):
+    def get_elements(self, sesh):
         return (('climo', 'Climatological calculations'), ('raw', 'Raw measurements from participating networks'))
     
 class PcdsNetworkIndex(PcdsIndex):
@@ -104,15 +116,15 @@ class PcdsNetworkIndex(PcdsIndex):
         kwargs = dict(list(defaults.items()) + list(kwargs.items())) # FIXME: defaults.update()?
         PcdsIndex.__init__(self, **kwargs)
 
-    def get_elements(self):
+    def get_elements(self, sesh):
         '''Runs a database query and returns a list of (``network_name``, ``network_description``) pairs for which there exists either climo or raw data.
         '''
-        with self.session_scope_factory() as sesh:
-            # Join to vars_per_history to make sure data exists for stations in each network, but don't actually return anything associated with that table
-            query = sesh.query(Network.name, Network.long_name).join(Variable).\
+        # Join to vars_per_history to make sure data exists for
+        # stations in each network, but don't actually return anything
+        # associated with that table
+        query = sesh.query(Network.name, Network.long_name).join(Variable).\
                 join(VarsPerHistory).distinct().order_by(Network.name)
-            elements = query.all()
-        return elements
+        return query.all()
 
 class PcdsStationIndex(PcdsIndex):
     '''WSGI app which renders an index page for all of the stations in a given PCDS network
@@ -132,24 +144,26 @@ class PcdsStationIndex(PcdsIndex):
         kwargs = dict(list(defaults.items()) + list(kwargs.items())) # FIXME: defaults.update()?
         PcdsIndex.__init__(self, **kwargs)
 
-    def get_elements(self):
-        '''Runs a database query and returns a list of (``native_id``, ``station_name``) pairs which are in the given PCDS network.
+    def get_elements(self, sesh):
+
+        '''Runs a database query and returns a list of (``native_id``,
+        ``station_name``) pairs which are in the given PCDS network.
         '''
         network_name = self.args['network']
-        with self.session_scope_factory() as sesh:
 
-            # Join to vars_per_history to make sure data exists for each station, but don't actually return anything associated with that table
-            if self.args['is_climo']:
-                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
+        # Join to vars_per_history to make sure data exists for each
+        # station, but don't actually return anything associated with
+        # that table
+        if self.args['is_climo']:
+            query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
                     filter(Network.name == network_name).\
                     filter(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over'))).\
                     distinct().order_by(Station.native_id)
-            else:
-                query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
+        else:
+            query = sesh.query(Station.native_id, History.station_name).join(History).join(Network).join(VarsPerHistory).join(Variable).\
                     filter(Network.name == network_name).\
                     filter(not_(or_(Variable.cell_method.contains('within'), Variable.cell_method.contains('over')))).\
                     distinct().order_by(Station.native_id)
 
-            elements = query.all()
-        return elements
+        return query.all()
 
