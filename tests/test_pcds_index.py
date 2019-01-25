@@ -42,7 +42,7 @@ def test_network_index(conn_params):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     
     assert "Participating CRMP Networks" in soup.title.string
     assert "FLNRO-WMB/" in resp.body
@@ -58,7 +58,7 @@ def test_station_index(conn_params):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
     
     assert "Stations for network AGRI" in soup.title.string
     assert "de107/" in resp.body
@@ -77,7 +77,7 @@ def test_station_index_for_climatologies(conn_params, test_session):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body)
+    soup = BeautifulSoup(resp.body, features="html.parser")
 
     assert "Stations for network AGRI" in soup.title.string
     assert "de107/" not in resp.body
