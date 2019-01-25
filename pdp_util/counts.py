@@ -8,12 +8,11 @@ from pdp_util.util import get_stn_list, get_clip_dates
 from pdp_util.filters import validate_vars
 from pdp_util import session_scope
 
+
 class CountStationsApp(object):
     '''Application for counting the number of stations that meet the query parameters
     '''
-    def __init__(self, conn_params):
-        def session_scope_factory():
-            return session_scope(conn_params)
+    def __init__(self, session_scope_factory=None):
         self.session_scope_factory = session_scope_factory
 
     def __call__(self, environ, start_response):
@@ -23,21 +22,36 @@ class CountStationsApp(object):
 
         filters = validate_vars(environ)
 
-        with self.session_scope_factory() as sesh:
-            stns = get_stn_list(sesh, filters)
+        if 'sesh' in environ:
+            stns = get_stn_list(environ.get('sesh'), filters)
+        else:
+            if not self.session_scope_factory:
+                raise RuntimeError("%s called with neither a database session "
+                                   "factory nor an available session."
+                                   % self.__name__)
+            with self.session_scope_factory() as sesh:
+                stns = get_stn_list(sesh, filters)
+
         return json.dumps({'stations_selected': len(stns)})
+
+
+def get_counts(sesh, filters, sdate, edate):
+    stns = [stn[0] for stn in get_stn_list(sesh, filters, cng.station_id)]
+
+    rv = length_of_return_dataset(sesh, stns, sdate, edate)
+    obs_count = int(rv[0] if rv[0] else 0)
+    rv = length_of_return_climo(sesh, stns)
+    climo_count = int(rv[0] if rv[0] else 0)
+    return {'record_length': obs_count, 'climo_length': climo_count}
+
 
 class CountRecordLengthApp(object):
     '''Applications for estimating the length of the dataset which would be returned
        by the stations which meet the given criteria
     '''
-    def __init__(self, conn_params, max_stns):
-        self.max_stns = int(max_stns)
-
-        def session_scope_factory():
-            return session_scope(conn_params)
+    def __init__(self, session_scope_factory, max_stns):
         self.session_scope_factory = session_scope_factory
-
+        self.max_stns = int(max_stns)
 
     def __call__(self, environ, start_response):
         req = Request(environ)
@@ -46,19 +60,23 @@ class CountRecordLengthApp(object):
         filters = validate_vars(environ)
         sdate, edate = get_clip_dates(environ)
 
-        with self.session_scope_factory() as sesh:
-            stns = [stn[0] for stn in get_stn_list(sesh, filters, cng.station_id)]
+        if 'sesh' in environ:
+            counts = get_counts(environ.get('sesh'), filters, sdate, edate)
+        else:
+            if not self.session_scope_factory:
+                raise RuntimeError("%s called with neither a database session "
+                                   "factory nor an available session."
+                                   % self.__name__)
 
-            rv = length_of_return_dataset(sesh, stns, sdate, edate)
-            obs_count = int(rv[0] if rv[0] else 0)
-            rv = length_of_return_climo(sesh, stns)
-            climo_count = int(rv[0] if rv[0] else 0)
+            with self.session_scope_factory() as sesh:
+                counts = get_counts(sesh, filters, sdate, edate)
 
         status = '200 OK'
         response_headers = [('Content-type', 'application/json; charset=utf-8')]
         start_response(status, response_headers)
 
-        return json.dumps({'record_length': obs_count, 'climo_length': climo_count})
+        return json.dumps(counts)
+
 
 def length_of_return_dataset(sesh, stn_ids, sdate=None, edate=None):
     q = sesh.query(func.sum(ObsCountPerMonthHistory.count)).join(History, History.id == ObsCountPerMonthHistory.history_id).filter(History.station_id.in_(stn_ids))

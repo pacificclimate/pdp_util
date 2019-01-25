@@ -12,20 +12,21 @@ def test_get_stn_list(test_session):
     stns = get_stn_list(test_session, [])
     assert len(stns) == 50
 
+
 @pytest.mark.parametrize(('constraints', 'to_select', 'expected'), [
-    ([text("network_name == 'EC_raw'")],
+    ([text("network_name = 'EC_raw'")],
      cng.native_id,
-     ['1046332', '1126150', '1106200', '1022795']
+     ['1046332', '1126150', '1106200']
     ),
     ([cng.max_obs_time > datetime(2000, 1, 1), cng.min_obs_time < datetime(2000, 1, 31)],
      cng.station_id,
-     [613, 813, 913, 1113, 1413, 1613, 1713, 1813, 1913, 2113, 2213, 2513, 2773, 3084]),
+     [613, 813, 913, 1113, 1413, 1613, 2113, 2773, 1313, 113, 713, 1213, 2673, 2613, 413 ]),
     ([cng.min_obs_time < datetime(1965, 1, 1)],
      cng.station_id,
-     [513, 613, 813]),
+     [13, 513, 613, 713, 813]),
     ([cng.freq == '1-hourly'],
      cng.network_name,
-     ['FLNRO-WMB', 'MoTIe', 'EC_raw'])
+     ['FLNRO-WMB', 'MoTIe', 'EC_raw', 'BCH', 'ENV-AQN'])
     ])
 def test_get_stn_list_with_filter(test_session, constraints, to_select, expected):
     stns = get_stn_list(test_session, constraints, to_select)

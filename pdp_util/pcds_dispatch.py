@@ -47,12 +47,12 @@ class PcdsDispatcher(object):
     def __call__(self, environ, start_response):
         path = environ['PATH_INFO']
         environ.update({'pcic.app_root': self.kwargs['app_root'], 'pcic.ol_path': self.kwargs['ol_path']})
-        responder_class, responder_args, responder_kwargs, new_env = self._route_request(path)
+        responder_class, responder_args, responder_kwargs, new_env = self._route_request(path, environ)
         responder = responder_class(*responder_args, **responder_kwargs)
         environ.update(new_env)
         return responder(environ, start_response)
 
-    def _route_request(self, path):
+    def _route_request(self, path, environ):
         '''Returns a tuple of (responder_class, responder_args, responder_kwargs, new_request_environment)
 
         :param path: the PATH_INFO of the request
@@ -107,7 +107,8 @@ class PcdsDispatcher(object):
             if '.' not in path: # Assume that it's just a listing and not point to a dataset
                 env['PATH_INFO'] = path.rstrip('/') + '.%s.html' % ext #FIXME html response!
 
-            return cls_, [self.kwargs['conn_params']], {}, env
+            kwargs = {'sesh': environ.get('sesh', None)}
+            return cls_, [self.kwargs['conn_params']], kwargs, env
 
         except IndexError:
             logger.debug('Listing stations for a network')
