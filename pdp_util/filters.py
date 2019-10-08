@@ -9,7 +9,7 @@ from pycds import CrmpNetworkGeoserver as cng
 
 from sqlalchemy.sql.functions import GenericFunction
 from sqlalchemy.types import String
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects import postgresql
 
 # Register the PostgreSQL function `regexp_split_to_array`, with explicit
 # typing with postresql.ARRAY. This allows use of PostgreSQL specific operator
@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 # Unfortunately this does not solve the problem of comparing expressions
 # created with this function. See `tests/test_filters.py`.
 class regexp_split_to_array(GenericFunction):
-    type = ARRAY(String)
+    type = postgresql.ARRAY(String)
 
 
 class FormFilter(namedtuple('FormFilter', 'input_name regex sql_constraint')):
@@ -136,8 +136,11 @@ form_filters = {
         # match *all* variables. This makes it consistent with
         # the previous (non-list) API but is counterintuitive for a list-
         # oriented API.
-        lambda x: len(x) == 0 or
-            func.regexp_split_to_array(cng.vars, ',\s*').overlap(x.split(','))
+        lambda x: (
+            len(x) == 0 or
+            func.regexp_split_to_array(cng.vars, ',\\s*')
+                .overlap(postgresql.array(x.split(',')))
+        )
     ),
 
     'input-freq': FormFilter(
