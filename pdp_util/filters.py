@@ -3,13 +3,48 @@ from collections import namedtuple
 from datetime import datetime
 
 from webob.request import Request
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
 from pycds import CrmpNetworkGeoserver as cng
 
+from sqlalchemy.sql.functions import GenericFunction
+from sqlalchemy.types import String
+from sqlalchemy.dialects import postgresql
+
+# Register the PostgreSQL function `regexp_split_to_array`, with explicit
+# typing with postresql.ARRAY. This allows use of PostgreSQL specific operator
+# `overlap` (`&&`) in the SQLAlchemy code.
+# See https://docs.sqlalchemy.org/en/12/core/type_basics.html#sqlalchemy.types.ARRAY
+# Unfortunately this does not solve the problem of comparing expressions
+# created with this function. See `tests/test_filters.py`.
+class regexp_split_to_array(GenericFunction):
+    type = postgresql.ARRAY(String)
+
+
 class FormFilter(namedtuple('FormFilter', 'input_name regex sql_constraint')):
-    ''' A simple class for validating form input and mapping the input to a database constraint on the crmp_network_geoserver table
-    '''
+    """ A simple class for validating form input and mapping the input to a
+    database constraint on the `crmp_network_geoserver` table.
+
+    NOTE regarding filtering on variables:
+
+    Filtering on variables (parameters `input-var` and `input-vars`), is based
+    on the column `crmp_network_geoserver.vars`. This column contains a comma-
+    separated (actually: ', '-separated) list of variable identifiers aggregated
+    over the `history_id`.
+
+    A variable identifier is formed from a row of
+    `pycds.Variable` (table `meta_vars`) by concatenating (without separator)
+    the column `standard_name` and the string derived from column `cell_method`
+    by replacing all occurrences of the string 'time: ' with '_'. It is unknown
+    at the date of this writing why this replacement is performed. For
+    reference, an identifier is formed by the following PostgreSQL expression
+    (see CRMP database view `collapsed_vars_v`, column `vars`):
+    ```
+    array_to_string(array_agg(meta_vars.standard_name::text ||
+    regexp_replace(meta_vars.cell_method::text, 'time: '::text, '_'::text, 'g'::text)),
+    ', '::text)
+    ```
+    """
     def __call__(self, value):
         '''A FormFilter object can be called with form input value.  If the input matches the filters regular expression (i.e. it is valid)
            the call will return a string which is an SQL constraint on the crmp_network_geoserver table
@@ -42,14 +77,97 @@ def mk_mp_regex():
     return multipolygon
 
 form_filters = {
-    'from-date':             FormFilter('from-date',             r'[0-9]{4}/[0-9]{2}/[0-9]{2}', lambda x: cng.max_obs_time > datetime.strptime(x, '%Y/%m/%d')),
-    'to-date':               FormFilter('to-date',               r'[0-9]{4}/[0-9]{2}/[0-9]{2}', lambda x: cng.min_obs_time < datetime.strptime(x, '%Y/%m/%d')),
-    'network-name':          FormFilter('network-name',          r'[A-Za-z_]+',                 lambda x: cng.network_name == x),
-    'input-var':             FormFilter('input-var',             r'[a-z: _]+',                  lambda x: cng.vars.like('%{}%'.format(x))),
-    'input-freq':            FormFilter('input-freq',            r'(1-hourly|irregular|daily|12-hourly)', lambda x: cng.freq == x),
-    'input-polygon':         FormFilter('input-polygon',          mk_mp_regex(),                "ST_intersects(ST_GeomFromText('%s', 4326), the_geom)"),
-    'only-with-climatology': FormFilter('only-with-climatology', 'only-with-climatology',       lambda x: or_(cng.vars.like('%within%'), cng.vars.like('%over%')))
-    }
+    'from-date': FormFilter(
+        # Single valid date in format '%Y/%m/%d'
+        'from-date',
+        r'[0-9]{4}/[0-9]{2}/[0-9]{2}',
+        lambda x: cng.max_obs_time > datetime.strptime(x, '%Y/%m/%d')
+    ),
+
+    'to-date': FormFilter(
+        # Single valid date in format '%Y/%m/%d'
+        'to-date',
+        r'[0-9]{4}/[0-9]{2}/[0-9]{2}',
+        lambda x: cng.min_obs_time < datetime.strptime(x, '%Y/%m/%d')
+    ),
+
+    'network-name': FormFilter(
+        # Comma-separated list (as string) of network names
+        'network-name',
+        # The following simple regex for a comma-separated list does not exclude
+        # empty list items (two successive commas) ... but it is simple.
+        r'[A-Za-z_,]*',
+        # Warning: The following filter makes the empty string (empty list)
+        # match *all* networks. This preserves backward compatibility with
+        # the previous (non-list) API but is counterintuitive for a list-
+        # oriented API.
+        lambda x: len(x) == 0 or cng.network_name.in_(x.split(','))
+    ),
+
+    'input-var': FormFilter(
+        # Single variable identifier
+        # See note in class docstring regarding the content of a variable
+        # identifier.
+        'input-var',
+        r'[a-z: _]+',
+        lambda x: cng.vars.like('%{}%'.format(x))
+    ),
+
+    'input-vars': FormFilter(
+        # Comma-separated list (as string) of variable identifiers.
+        # See note in class docstring regarding the content of a variable
+        # identifier.
+        'input-vars',
+        # The following simple regex for a comma-separated list does not exclude
+        # empty list items (two successive commas) ... but it is simple.
+        r'[a-z: _,]*',
+        # The following filter checks whether any variable identifier `v` in
+        # the comma-separated list `x` of variable identifiers occurs in
+        # `cng.vars` (which is itself a comma-separated list of variable
+        # identifiers).
+        #
+        # Unlike parameter `input-var`, an exact match between a variable
+        # identifier in `x` and one in `cng.vars` is required. This test uses the
+        # PostgreSQL specific function `regexp_split_to_array` and array
+        # operator overlap (`&&`) for this test. This code will not necessarily
+        # work in any other type of database.
+        #
+        # Warning: This filter makes the empty string (empty list)
+        # match *all* variables. This makes it consistent with
+        # the previous (non-list) API but is counterintuitive for a list-
+        # oriented API.
+        lambda x: (
+            len(x) == 0 or
+            func.regexp_split_to_array(cng.vars, ',\\s*')
+                .overlap(postgresql.array(x.split(',')))
+        )
+    ),
+
+    'input-freq': FormFilter(
+        # Comma-separated list (as string) of valid frequency identifiers
+        'input-freq',
+        # The following simple regex for a comma-separated list does not exclude
+        # empty list items (two successive commas) ... but it is simple.
+        r'(1-hourly|irregular|daily|12-hourly|,)*',
+        # Warning: The following filter makes the empty string (empty list)
+        # match *all* frequencies. This preserves backward compatibility with
+        # the previous (non-list) API but is counterintuitive for a list-
+        # oriented API.
+        lambda x: len(x) == 0 or cng.freq.in_(x.split(','))
+    ),
+
+    'input-polygon': FormFilter(
+        'input-polygon',
+        mk_mp_regex(),
+        "ST_intersects(ST_GeomFromText('%s', 4326), the_geom)"
+    ),
+
+    'only-with-climatology': FormFilter(
+        'only-with-climatology',
+        'only-with-climatology',
+        lambda x: or_(cng.vars.like('%within%'), cng.vars.like('%over%'))
+    ),
+}
 
 def validate_vars(environ):
     '''Iterate over the POST variables and convert them to SQL constraints
