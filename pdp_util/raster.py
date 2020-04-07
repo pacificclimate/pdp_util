@@ -3,7 +3,7 @@ from os.path import basename
 
 from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
-from modelmeta import DataFile, DataFileVariable, EnsembleDataFileVariables, Ensemble, VariableAlias
+from modelmeta import DataFile, DataFileVariableDSGTimeSeries, EnsembleDataFileVariables, Ensemble, VariableAlias
 
 from simplejson import dumps
 from webob.request import Request
@@ -139,10 +139,10 @@ class RasterMetadata(object):
             return ["Required parameter 'var' not specified"]
 
         with self.session_scope_factory() as sesh:
-            r = sesh.query(DataFileVariable.range_min, DataFileVariable.range_max)\
+            r = sesh.query(DataFileVariableDSGTimeSeries.range_min, DataFileVariableDSGTimeSeries.range_max)\
                 .join(DataFile)\
                 .filter(DataFile.unique_id == unique_id)\
-                .filter(DataFileVariable.netcdf_variable_name == var)
+                .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
 
         if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
             start_response('404 Not Found', [])
@@ -180,11 +180,11 @@ class RasterMetadata(object):
             return ["Required parameter 'var' not specified"]
 
         with self.session_scope_factory() as sesh:
-            r = sesh.query(DataFileVariable.range_min, DataFileVariable.range_max, VariableAlias.units)\
+            r = sesh.query(DataFileVariableDSGTimeSeries.range_min, DataFileVariableDSGTimeSeries.range_max, VariableAlias.units)\
                 .join(DataFile)\
                 .join(VariableAlias)\
                 .filter(DataFile.unique_id == unique_id)\
-                .filter(DataFileVariable.netcdf_variable_name == var)
+                .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
 
         if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
             start_response('404 Not Found', [])
@@ -232,5 +232,5 @@ def db_raster_configurator(session, name, version, api_version, ensemble, root_u
     return config
 
 def ensemble_files(session, ensemble_name):
-    q = session.query(DataFile).join(DataFileVariable).join(EnsembleDataFileVariables).join(Ensemble).filter(Ensemble.name == ensemble_name)
+    q = session.query(DataFile).join(DataFileVariableDSGTimeSeries).join(EnsembleDataFileVariables).join(Ensemble).filter(Ensemble.name == ensemble_name)
     return { row.unique_id: row.filename for row in q }
