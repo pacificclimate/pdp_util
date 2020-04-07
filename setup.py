@@ -26,6 +26,7 @@ setup(
     url="http://www.pacificclimate.org/",
     author="James Hiebert",
     author_email="hiebert@uvic.ca",
+    # TODO: Should we adhere to policy: no version numbers in setup.py requirements?
     install_requires=['webob',
                       'openid2rp',
                       'genshi',
