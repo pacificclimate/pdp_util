@@ -1,3 +1,4 @@
+from os.path import basename
 from pdp_util.raster import ensemble_files, db_raster_catalog, db_raster_configurator, EnsembleCatalog
 import json
 
@@ -25,7 +26,7 @@ def test_db_raster_catalog(
 ):
     result = db_raster_catalog(mm_test_session, ensemble1.name, root_url)
     assert result == {
-        df.unique_id: '{}{}'.format(root_url, df.filename)
+        df.unique_id: '{}{}'.format(root_url, basename(df.filename))
         for df in ensemble1_data_files
     }
 
