@@ -126,7 +126,7 @@ def ensemble2():
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
         id=i,
-        filename='data_file_{}'.format(i),
+        filename='/storage/data_file_{}'.format(i),
         first_1mib_md5sum='first_1mib_md5sum',
         unique_id='unique_id_{}'.format(i),
         x_dim_name='lon',
