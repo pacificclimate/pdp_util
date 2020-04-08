@@ -31,14 +31,20 @@ def test_db_raster_catalog(
     }
 
 
-@pytest.mark.parametrize('name, version, api_version, ensemble, root_url', [
-    ('A name', 'Version 0.0.0.1', '0.0', 'bc_prism', 'http://root.ca'),
+@pytest.mark.parametrize(
+    'name, version, api_version, ensemble, root_url, handlers',
+    [
+        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble1', 'http://root.ca',
+         [
+             {'url': 'data_file_1', 'file': '/storage/data_file_1'},
+             {'url': 'data_file_2', 'file': '/storage/data_file_2'},
+         ]),
 ])
 def test_db_raster_configurator(
-    mm_test_session, name, version, api_version, ensemble, root_url
+    mm_test_session, name, version, api_version, ensemble, root_url, handlers,
 ):
     result = db_raster_configurator(
-        mm_test_session, name, version, api_version, ensemble, root_url
+        mm_test_session, name, version, api_version, ensemble, root_url,
     )
     assert all(
         x in result.items()
@@ -50,26 +56,6 @@ def test_db_raster_configurator(
             'api_version': api_version,
         }.items()
     )
-
-
-@pytest.mark.parametrize(
-    'name, version, api_version, ensemble, root_url, handlers',
-    [
-        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble1', 'http://root.ca',
-         [
-             {'url': 'data_file_1', 'file': '/storage/data_file_1'},
-             {'url': 'data_file_2', 'file': '/storage/data_file_2'},
-         ]),
-])
-def test_db_raster_configurator_handlers(
-    mm_test_session, name, version, api_version, ensemble, root_url, handlers,
-):
-    # Handlers must be tested seperately because they are a list and order
-    # cannot be guaranteed on database query
-    result = db_raster_configurator(
-        mm_test_session, name, version, api_version, ensemble, root_url,
-    )
-    print('### handlers', result['handlers'])
     assert all(
         x in result['handlers']
         for x in handlers
