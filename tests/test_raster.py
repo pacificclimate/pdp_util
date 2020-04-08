@@ -52,17 +52,28 @@ def test_db_raster_configurator(
     )
 
 
-def test_db_raster_configurator_handlers(mm_session):
-    # Handlers must be tested seperately because they are a list and order cannot be guaranteed on database query
-    args = [mm_session, 'A name', 'Version 0.0.0.1', '0.0', 'bc_prism', 'http://basalt.pcic.uvic.ca:8080/data/']
-    handlers = [{'url': 'tmax_monClim_PRISM_historical_run1_197101-200012.nc',
-                 'file': '/home/data/climate/PRISM/dataportal/tmax_monClim_PRISM_historical_run1_197101-200012.nc'},
-                {'url': 'pr_monClim_PRISM_historical_run1_197101-200012.nc',
-                 'file': '/home/data/climate/PRISM/dataportal/pr_monClim_PRISM_historical_run1_197101-200012.nc'},
-                {'url': 'tmin_monClim_PRISM_historical_run1_197101-200012.nc',
-                 'file': '/home/data/climate/PRISM/dataportal/tmin_monClim_PRISM_historical_run1_197101-200012.nc'}]
-    result = db_raster_configurator(*args)
-    assert all([x in result['handlers'] for x in handlers])
+@pytest.mark.parametrize(
+    'name, version, api_version, ensemble, root_url, handlers',
+    [
+        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble1', 'http://root.ca',
+         [
+             {'url': 'data_file_1', 'file': '/storage/data_file_1'},
+             {'url': 'data_file_2', 'file': '/storage/data_file_2'},
+         ]),
+])
+def test_db_raster_configurator_handlers(
+    mm_test_session, name, version, api_version, ensemble, root_url, handlers,
+):
+    # Handlers must be tested seperately because they are a list and order
+    # cannot be guaranteed on database query
+    result = db_raster_configurator(
+        mm_test_session, name, version, api_version, ensemble, root_url,
+    )
+    print('### handlers', result['handlers'])
+    assert all(
+        x in result['handlers']
+        for x in handlers
+    )
 
 
 @pytest.mark.parametrize('url', ['', '/url/is/irrellevant'])
