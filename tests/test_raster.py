@@ -30,14 +30,25 @@ def test_db_raster_catalog(
     }
 
 
-def test_db_raster_configurator(mm_session):
-    args = [mm_session, 'A name', 'Version 0.0.0.1', '0.0', 'bc_prism', 'http://basalt.pcic.uvic.ca:8080/data/']
-    result = db_raster_configurator(*args)
-    assert all([x in result.items() for x in {'root_url': 'http://basalt.pcic.uvic.ca:8080/data/',
-                                             'name': 'A name',
-                                             'version': 'Version 0.0.0.1',
-                                             'ensemble': 'bc_prism',
-                                             'api_version': '0.0'}.items()])
+@pytest.mark.parametrize('name, version, api_version, ensemble, root_url', [
+    ('A name', 'Version 0.0.0.1', '0.0', 'bc_prism', 'http://root.ca'),
+])
+def test_db_raster_configurator(
+    mm_test_session, name, version, api_version, ensemble, root_url
+):
+    result = db_raster_configurator(
+        mm_test_session, name, version, api_version, ensemble, root_url
+    )
+    assert all(
+        x in result.items()
+        for x in {
+            'root_url': root_url,
+            'name': name,
+            'version': version,
+            'ensemble': ensemble,
+            'api_version': api_version,
+        }.items()
+    )
 
 
 def test_db_raster_configurator_handlers(mm_session):
