@@ -19,11 +19,15 @@ def test_ensemble2_files(mm_test_session, ensemble2, ensemble2_data_files):
     assert result == {df.unique_id: df.filename for df in ensemble2_data_files}
 
 
-def test_db_raster_catalog(mm_session, config):
-    result = db_raster_catalog(mm_session, config['ensemble'], config['root_url'])
-    assert result == {'tmax_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmax_monClim_PRISM_historical_run1_197101-200012.nc',
-                      'pr_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/pr_monClim_PRISM_historical_run1_197101-200012.nc',
-                      'tmin_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmin_monClim_PRISM_historical_run1_197101-200012.nc'}
+@pytest.mark.parametrize('root_url', ['foo/', 'bar/'])
+def test_db_raster_catalog(
+    mm_test_session, ensemble1, ensemble1_data_files, root_url
+):
+    result = db_raster_catalog(mm_test_session, ensemble1.name, root_url)
+    assert result == {
+        df.unique_id: '{}{}'.format(root_url, df.filename)
+        for df in ensemble1_data_files
+    }
 
 
 def test_db_raster_configurator(mm_session):

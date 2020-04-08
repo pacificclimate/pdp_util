@@ -69,6 +69,7 @@ def test_session(empty_session):
 def conn_params(test_session):
     yield test_session.get_bind().url
 
+
 #######################################################################
 # Test fixtures for code dependent on modelmeta database
 
@@ -85,7 +86,7 @@ def mm_engine():
         engine.dispose()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def mm_empty_session(mm_engine):
     """Single-test database session. All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
@@ -261,14 +262,15 @@ def mm_test_session(
     ensemble_dfvs_1,
     ensemble_dfvs_2,
 ):
-    mm_empty_session.add_all([ensemble1, ensemble2])
-    mm_empty_session.flush()
-    mm_empty_session.add_all([dfv_dsg_time_series_11, dfv_dsg_time_series_12])
-    mm_empty_session.flush()
-    mm_empty_session.add_all(ensemble_dfvs_1)
-    mm_empty_session.add_all(ensemble_dfvs_2)
-    mm_empty_session.flush()
-    yield mm_empty_session
+    s = mm_empty_session
+    s.add_all([ensemble1, ensemble2])
+    s.flush()
+    s.add_all([dfv_dsg_time_series_11, dfv_dsg_time_series_12])
+    s.flush()
+    s.add_all(ensemble_dfvs_1)
+    s.add_all(ensemble_dfvs_2)
+    s.flush()
+    yield s
 
 
 @pytest.fixture(scope="function")
