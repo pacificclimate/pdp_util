@@ -448,16 +448,6 @@ def raster_metadata(mm_database_dsn):
     return RasterMetadata(mm_database_dsn)
 
 
-@pytest.fixture(scope="function")
-def mm_session():
-    return modelmeta.test_session()
-
-
-@pytest.fixture(scope="function")
-def mm_dsn():
-    return modelmeta.test_dsn
-
-
 # Helper functions as fixtures
 
 @pytest.fixture(scope="session")
