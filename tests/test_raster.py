@@ -93,7 +93,32 @@ def query_params(nv_pairs):
     )
 
 
-@pytest.mark.parametrize('id, var, status', [
+def do_test_raster_metadata_minmax(
+    app,
+    req, keys,
+    id_, var, status
+):
+    # This function enables us to parametrize the tests in different ways,
+    # but not duplicate test code.
+    qps = query_params((('request', req), ('id', id_), ('var', var)))
+    req = Request.blank('?{}'.format(qps))
+    resp = req.get_response(app)
+
+    assert resp.status == status
+    if status != '200 OK':
+        return
+
+    assert resp.content_type == 'application/json'
+    stats = json.loads(resp.body)
+    assert set(stats.keys()) == keys
+
+
+# Valid request= types, variety of id, var cases.
+@pytest.mark.parametrize('req, keys', [
+    ('GetMinMax', {'min', 'max'}),
+    ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
+])
+@pytest.mark.parametrize('id_, var, status', [
     ('unique_id_1', 'var_1', '200 OK'),
     ('unique_id_1', 'var_2', '200 OK'),
     ('unique_id_2', 'var_3', '200 OK'),
@@ -106,69 +131,24 @@ def query_params(nv_pairs):
     (None, None, '400 Bad Request'),
 ])
 @pytest.mark.usefixtures('mm_test_session_committed')
-def test_raster_metadata_minmax(raster_metadata, id, var, status):
-    qps = query_params((('id', id), ('var', var)))
-    req = Request.blank('?request=GetMinMax&{}'.format(qps))
-    resp = req.get_response(raster_metadata)
-
-    assert resp.status == status
-    if status != '200 OK':
-        return
-
-    assert resp.content_type == 'application/json'
-    stats = json.loads(resp.body)
-    assert len(stats) == 2
-    assert set(stats.keys()) == set(['max', 'min'])
+def test_raster_metadata_minmax(
+    raster_metadata,
+    req, keys,
+    id_, var, status
+):
+    do_test_raster_metadata_minmax(
+        raster_metadata,
+        req, keys,
+        id_, var, status
+    )
 
 
-@pytest.mark.parametrize('id, var, status', [
-    ('unique_id_1', 'var_1', '200 OK'),
-    ('unique_id_1', 'var_2', '200 OK'),
-    ('unique_id_2', 'var_3', '200 OK'),
-    ('unique_id_3', 'var_4', '200 OK'),
-    ('unique_id_1', 'var_3', '404 Not Found'),
-    ('unique_id_1', 'wrong', '404 Not Found'),
-    ('wrong', 'var_4', '404 Not Found'),
-    (None, 'var_1', '400 Bad Request'),
-    ('unique_id_1', None, '400 Bad Request'),
-    (None, None, '400 Bad Request'),
-])
+# One final test that doesn't fit the parametrization pattern above.
 @pytest.mark.usefixtures('mm_test_session_committed')
-def test_raster_metadata_minmax_w_units(raster_metadata, id, var, status):
-    qps = query_params((('id', id), ('var', var)))
-    req = Request.blank('?request=GetMinMaxWithUnits&{}'.format(qps))
-    # req = Request.blank('?request=GetMinMaxWithUnits&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
-    resp = req.get_response(raster_metadata)
-
-    assert resp.status == status
-    if status != '200 OK':
-        return
-
-    assert resp.content_type == 'application/json'
-    stats = json.loads(resp.body)
-    assert len(stats) == 3
-    assert set(stats.keys()) == set(['max', 'min', 'units'])
-
-
 def test_raster_metadata_minmax_no_id(raster_metadata):
-    req = Request.blank('?request=INVALID_REQUEST_TYPE&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
-    resp = req.get_response(raster_metadata)
-    assert resp.status == '400 Bad Request'
-
-
-def test_raster_metadata_minmax_no_id(raster_metadata):
-    req = Request.blank('?request=GetMinMax&var=tasmax')
-    resp = req.get_response(raster_metadata)
-    assert resp.status == '400 Bad Request'
-
-
-def test_raster_metadata_minmax_no_var(raster_metadata):
-    req = Request.blank('?request=GetMinMax&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231')
-    resp = req.get_response(raster_metadata)
-    assert resp.status == '400 Bad Request'
-
-
-def test_raster_metadata_minmax_bad_id(raster_metadata):
-    req = Request.blank('?request=GetMinMax&id=NOT_A_VALID_ID&var=tasmax')
-    resp = req.get_response(raster_metadata)
-    assert resp.status == '404 Not Found'
+    do_test_raster_metadata_minmax(
+        raster_metadata,
+        'INVALID_REQUEST_TYPE', {},
+        'unique_id_1', 'var_1',
+        '400 Bad Request'
+    )
