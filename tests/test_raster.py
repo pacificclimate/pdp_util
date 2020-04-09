@@ -112,7 +112,7 @@ def test_raster_metadata_minmax(
     id_, var, status
 ):
     qps = query_params((('request', req), ('id', id_), ('var', var)))
-    test_wsgi_app(raster_metadata, qps, status, keys)
+    test_wsgi_app(raster_metadata, qps, status, 'application/json', keys)
 
 
 # One final test that doesn't fit the parametrization pattern above.
@@ -125,4 +125,4 @@ def test_raster_metadata_minmax_no_id(
         ('id', 'unique_id_1'),
         ('var', 'var_1')
     ))
-    test_wsgi_app(raster_metadata, qps, '400 Bad Request', {})
+    test_wsgi_app(raster_metadata, qps, '400 Bad Request', None, None)

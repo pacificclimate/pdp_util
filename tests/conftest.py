@@ -475,15 +475,20 @@ def query_params():
 @pytest.fixture(scope="session")
 def test_wsgi_app():
     # It's OK to name a fixture with test_
-    def f(app, qps, status, keys):
+    def f(app, qps, status, content_type, keys):
         req = Request.blank('?{}'.format(qps))
         resp = req.get_response(app)
 
         assert resp.status == status
         if status != '200 OK':
-            return
+            return resp
 
-        assert resp.content_type == 'application/json'
+        assert resp.content_type == content_type
+        if content_type != 'application/json':
+            return resp
+
         body = json.loads(resp.body)
-        assert set(body.keys()) == keys
+        if keys is not None:
+            assert set(body.keys()) == keys
+        return body
     return f
