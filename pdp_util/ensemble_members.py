@@ -26,6 +26,11 @@ class EnsembleMemberLister(object):
             ensemble = sesh.query(Ensemble).filter(Ensemble.name == ensemble_name).first()
 
             if not ensemble: # Result does not contain any row therefore ensemble does not exist
+                # TODO: Instead of returning a text/plain response, this should
+                #  return a json response with an empty array, consistent with
+                #  the datatype for other ensemble names. OR, possibly better,
+                #  it should return a 404 not found -- because, like, ensemble
+                #  not found. But god only knows what depends on this choice.
                 start_response('200 OK', [('Content-type','text/plain; charset=utf-8')])
                 return ['']
 
