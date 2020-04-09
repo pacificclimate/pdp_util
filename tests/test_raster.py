@@ -1,9 +1,9 @@
 from os.path import basename
-from pdp_util.raster import ensemble_files, db_raster_catalog, db_raster_configurator, EnsembleCatalog
-import json
+from pdp_util.raster import (
+    ensemble_files, db_raster_catalog, db_raster_configurator, EnsembleCatalog
+)
 
 import pytest
-from webob.request import Request
 
 
 def test_ensemble_1_files(mm_test_session, ensemble_1, ensemble_1_data_files):
@@ -65,6 +65,7 @@ def test_db_raster_configurator(
 @pytest.mark.usefixtures('mm_test_session_committed')
 def test_ensemble_catalog(
     mm_database_dsn,
+    test_wsgi_app,
     ensemble_1,
     ensemble_1_data_files,
     root_url,
@@ -75,11 +76,7 @@ def test_ensemble_catalog(
         'root_url': root_url,
     }
     app = EnsembleCatalog(mm_database_dsn, config)
-    req = Request.blank(url)
-    resp = req.get_response(app)
-    assert resp.status == '200 OK'
-    assert resp.content_type == 'application/json'
-    body = json.loads(resp.body)
+    body = test_wsgi_app(app, url, '200 OK', 'application/json', None)
     assert body == {
         df.unique_id: '{}{}'.format(root_url, basename(df.filename))
         for df in ensemble_1_data_files
@@ -111,8 +108,8 @@ def test_raster_metadata_minmax(
     req, keys,
     id_, var, status
 ):
-    qps = query_params((('request', req), ('id', id_), ('var', var)))
-    test_wsgi_app(raster_metadata, qps, status, 'application/json', keys)
+    url = query_params((('request', req), ('id', id_), ('var', var)))
+    test_wsgi_app(raster_metadata, url, status, 'application/json', keys)
 
 
 # One final test that doesn't fit the parametrization pattern above.
@@ -120,9 +117,9 @@ def test_raster_metadata_minmax(
 def test_raster_metadata_minmax_no_id(
     raster_metadata, test_wsgi_app, query_params
 ):
-    qps = query_params((
+    url = query_params((
         ('request', 'INVALID_REQUEST_TYPE'),
         ('id', 'unique_id_1'),
         ('var', 'var_1')
     ))
-    test_wsgi_app(raster_metadata, qps, '400 Bad Request', None, None)
+    test_wsgi_app(raster_metadata, url, '400 Bad Request', None, None)

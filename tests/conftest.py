@@ -82,6 +82,7 @@ def conn_params(test_session):
 
 @pytest.fixture(scope='session')
 def mm_database_dsn():
+    """Test-session-wide testing.Postgresql instance; returns dsn for it"""
     with testing.postgresql.Postgresql() as pg:
         yield pg.url()
 
@@ -99,19 +100,16 @@ def mm_engine(mm_database_dsn):
 
 @pytest.fixture(scope='function')
 def mm_empty_session(mm_engine):
-    """Single-test database session. All session actions are rolled back on teardown"""
+    """Single-test database session.
+    All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
-    # Default search path is `"$user", public`. Need to reset that to search crmp (for our db/orm content) and
-    # public (for postgis functions)
     session.execute('SET search_path TO test_meta, public')
-    # print('\nsearch_path', [r for r in session.execute('SHOW search_path')])
     yield session
     session.rollback()
     session.close()
 
 
-# Test objects
-# TODO: Consider whether these can all be made scope='session'
+# Database test objects
 
 # Overview
 #
@@ -406,7 +404,6 @@ def mm_test_session_objects(
 def mm_test_session(mm_empty_session, mm_test_session_objects):
     s = mm_empty_session
     for obj in mm_test_session_objects:
-        # print('### mm_test_session: add', obj)
         s.add(obj)
         s.flush()
     yield s
@@ -425,14 +422,11 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
     # after ourselves. And commit that cleanup.
 
     s = mm_test_session
-    # print('### mm_test_session_committed: setup commit')
     s.commit()
     yield s
     for obj in reversed(mm_test_session_objects):
-        # print('### mm_test_session_committed: delete', obj)
         s.delete(obj)
         s.flush()
-    # print('### mm_test_session_committed: teardown commit')
     s.commit()
 
 
@@ -452,21 +446,22 @@ def raster_metadata(mm_database_dsn):
 
 @pytest.fixture(scope="session")
 def query_params():
+    """Returns a query parameter string formed from name-value pairs."""
     def f(nv_pairs):
-        return '&'.join(
+        return '?' + '&'.join(
             '{}={}'.format(name, value)
             for name, value in nv_pairs if value is not None
         )
     return f
 
 
-# WSGI app generic test
-
 @pytest.fixture(scope="session")
 def test_wsgi_app():
-    # It's OK to name a fixture with test_
-    def f(app, qps, status, content_type, keys):
-        req = Request.blank('?{}'.format(qps))
+    """Generic WSGI app test
+    Note: It's OK to name a fixture with test_
+    """
+    def f(app, url, status, content_type, keys):
+        req = Request.blank(url)
         resp = req.get_response(app)
 
         assert resp.status == status

@@ -16,7 +16,7 @@ def test_ensemble_member_lister(
     content_type,
     keys,
 ):
-    qps = query_params((('ensemble_name', ensemble),))
-    resp = test_wsgi_app(ensemble_member_lister, qps, status, content_type, keys)
+    url = query_params((('ensemble_name', ensemble),))
+    resp = test_wsgi_app(ensemble_member_lister, url, status, content_type, keys)
     if ensemble == 'non_existent':
         assert resp.body == ''
