@@ -5,10 +5,6 @@ import json
 import pytest
 from webob.request import Request
 
-@pytest.fixture(scope="function")
-def config():
-    return {'ensemble': 'bc_prism', 'root_url': 'http://basalt.pcic.uvic.ca:8080/data/'}
-
 
 def test_ensemble1_files(mm_test_session, ensemble1, ensemble1_data_files):
     result = ensemble_files(mm_test_session, ensemble1.name)
@@ -34,10 +30,10 @@ def test_db_raster_catalog(
 @pytest.mark.parametrize(
     'name, version, api_version, ensemble, root_url, handlers',
     [
-        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble1', 'http://root.ca',
+        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble1', 'http://root.ca/',
          [
-             {'url': 'data_file_1', 'file': '/storage/data_file_1'},
-             {'url': 'data_file_2', 'file': '/storage/data_file_2'},
+             {'url': 'data_file_1.nc', 'file': '/storage/data_file_1.nc'},
+             {'url': 'data_file_2.nc', 'file': '/storage/data_file_2.nc'},
          ]),
 ])
 def test_db_raster_configurator(
@@ -62,18 +58,32 @@ def test_db_raster_configurator(
     )
 
 
-@pytest.mark.parametrize('url', ['', '/url/is/irrellevant'])
-def test_ensemble_catalog(mm_dsn, config, url):
-    app = EnsembleCatalog(mm_dsn, config)
+@pytest.mark.parametrize('url', ['', '/url/is/irrelevant'])
+@pytest.mark.parametrize('root_url', [
+    'http://root.ca/',
+])
+def test_ensemble_catalog(
+    mm_database_dsn,
+    mm_test_session_committed,
+    ensemble1,
+    ensemble1_data_files,
+    root_url,
+    url
+):
+    config = {
+        'ensemble': ensemble1.name,
+        'root_url': root_url,
+    }
+    app = EnsembleCatalog(mm_database_dsn, config)
     req = Request.blank(url)
     resp = req.get_response(app)
     assert resp.status == '200 OK'
     assert resp.content_type == 'application/json'
     body = json.loads(resp.body)
-    assert body == {'tmax_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmax_monClim_PRISM_historical_run1_197101-200012.nc',
-                    'pr_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/pr_monClim_PRISM_historical_run1_197101-200012.nc',
-                    'tmin_monClim_PRISM_historical_run1_197101-200012': 'http://basalt.pcic.uvic.ca:8080/data/tmin_monClim_PRISM_historical_run1_197101-200012.nc'}
-
+    assert body == {
+        df.unique_id: '{}{}'.format(root_url, basename(df.filename))
+        for df in ensemble1_data_files
+    }
 
 def test_raster_metadata_minmax(raster_metadata):
     req = Request.blank('?request=GetMinMax&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')

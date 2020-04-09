@@ -74,16 +74,22 @@ def conn_params(test_session):
 # Test fixtures for code dependent on modelmeta database
 
 # TODO: Factor out common engine creation
+
 @pytest.fixture(scope='session')
-def mm_engine():
-    """Test-session-wide database engine"""
+def mm_database_dsn():
     with testing.postgresql.Postgresql() as pg:
-        engine = create_engine(pg.url())
-        engine.execute("create extension postgis")
-        engine.execute(CreateSchema('test_meta'))
-        modelmeta.Base.metadata.create_all(bind=engine)
-        yield engine
-        engine.dispose()
+        yield pg.url()
+
+
+@pytest.fixture(scope='session')
+def mm_engine(mm_database_dsn):
+    """Test-session-wide database engine"""
+    engine = create_engine(mm_database_dsn)
+    engine.execute("create extension postgis")
+    engine.execute(CreateSchema('test_meta'))
+    modelmeta.Base.metadata.create_all(bind=engine)
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture(scope='function')
@@ -98,6 +104,9 @@ def mm_empty_session(mm_engine):
     session.rollback()
     session.close()
 
+
+# Test objects
+# TODO: Consider whether these can all be made scope='session'
 
 # Ensemble
 
@@ -126,7 +135,7 @@ def ensemble2():
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
         id=i,
-        filename='/storage/data_file_{}'.format(i),
+        filename='/storage/data_file_{}.nc'.format(i),
         first_1mib_md5sum='first_1mib_md5sum',
         unique_id='unique_id_{}'.format(i),
         x_dim_name='lon',
@@ -253,24 +262,72 @@ def ensemble2_data_files(data_file_3, data_file_2):
 # Database sessions
 
 @pytest.fixture(scope="function")
-def mm_test_session(
-    mm_empty_session,
+def mm_test_session_objects(
     ensemble1,
     ensemble2,
+    data_file_1,
+    data_file_2,
+    data_file_3,
     dfv_dsg_time_series_11,
     dfv_dsg_time_series_12,
+    dfv_dsg_time_series_21,
+    dfv_dsg_time_series_31,
     ensemble_dfvs_1,
     ensemble_dfvs_2,
 ):
+    # Note: Order matters. These objects must be inserted in the order given,
+    # and removed in the reverse order.
+    # Note: Completeness matters. SQLAlchemy will implicitly add objects but
+    # not necessarily implicitly delete them.
+    return (
+        [
+            ensemble1,
+            ensemble2,
+            data_file_1,
+            data_file_2,
+            data_file_3,
+            dfv_dsg_time_series_11,
+            dfv_dsg_time_series_12,
+            dfv_dsg_time_series_21,
+            dfv_dsg_time_series_31,
+        ] +
+        ensemble_dfvs_1 +
+        ensemble_dfvs_2
+    )
+
+
+@pytest.fixture(scope="function")
+def mm_test_session(mm_empty_session, mm_test_session_objects):
     s = mm_empty_session
-    s.add_all([ensemble1, ensemble2])
-    s.flush()
-    s.add_all([dfv_dsg_time_series_11, dfv_dsg_time_series_12])
-    s.flush()
-    s.add_all(ensemble_dfvs_1)
-    s.add_all(ensemble_dfvs_2)
-    s.flush()
+    for obj in mm_test_session_objects:
+        print('### mm_test_session: add', obj)
+        s.add(obj)
+        s.flush()
     yield s
+
+
+# TODO: Consider substituting delete actions for rollback everywhere
+@pytest.fixture(scope="function")
+def mm_test_session_committed(mm_test_session, mm_test_session_objects):
+    # Contents of an uncommitted session can only be seen by that session;
+    # i.e., a session is implicitly in a transaction. This is good.
+    # Some components of pdp_util, e.g., EnsembleCatalog, creates an
+    # independent engine and session to access the database, so we must commit
+    # our session contents.
+    # However, committing a session leaves gunk in the database that can
+    # mess up the database setup for other tests. Hence we have to clean up
+    # after ourselves. And commit that cleanup.
+
+    s = mm_test_session
+    print('### mm_test_session_committed: setup commit')
+    s.commit()
+    yield s
+    for obj in reversed(mm_test_session_objects):
+        print('### mm_test_session_committed: delete', obj)
+        s.delete(obj)
+        s.flush()
+    print('### mm_test_session_committed: teardown commit')
+    s.commit()
 
 
 @pytest.fixture(scope="function")
