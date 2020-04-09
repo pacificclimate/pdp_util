@@ -1,6 +1,8 @@
 import datetime
 import logging
+import json
 from pkg_resources import resource_filename
+from webob.request import Request
 
 import pytest
 import pycds
@@ -334,7 +336,7 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
 
 @pytest.fixture(scope="function")
 def ensemble_member_lister():
-    return EnsembleMemberLister(modelmeta.test_dsn)
+    return EnsembleMemberLister(mm_database_dsn)
 
 
 @pytest.fixture(scope="function")
@@ -350,3 +352,34 @@ def mm_session():
 @pytest.fixture(scope="function")
 def mm_dsn():
     return modelmeta.test_dsn
+
+
+# Helper functions as fixtures
+
+@pytest.fixture(scope="session")
+def query_params():
+    def f(nv_pairs):
+        return '&'.join(
+            '{}={}'.format(name, value)
+            for name, value in nv_pairs if value is not None
+        )
+    return f
+
+
+# WSGI app generic test
+
+@pytest.fixture(scope="session")
+def test_wsgi_app():
+    # It's OK to name a fixture with test_
+    def f(app, qps, status, keys):
+        req = Request.blank('?{}'.format(qps))
+        resp = req.get_response(app)
+
+        assert resp.status == status
+        if status != '200 OK':
+            return
+
+        assert resp.content_type == 'application/json'
+        body = json.loads(resp.body)
+        assert set(body.keys()) == keys
+    return f

@@ -86,33 +86,6 @@ def test_ensemble_catalog(
     }
 
 
-def query_params(nv_pairs):
-    return '&'.join(
-        '{}={}'.format(name, value)
-        for name, value in nv_pairs if value is not None
-    )
-
-
-def do_test_raster_metadata_minmax(
-    app,
-    req, keys,
-    id_, var, status
-):
-    # This function enables us to parametrize the tests in different ways,
-    # but not duplicate test code.
-    qps = query_params((('request', req), ('id', id_), ('var', var)))
-    req = Request.blank('?{}'.format(qps))
-    resp = req.get_response(app)
-
-    assert resp.status == status
-    if status != '200 OK':
-        return
-
-    assert resp.content_type == 'application/json'
-    stats = json.loads(resp.body)
-    assert set(stats.keys()) == keys
-
-
 # Valid request= types, variety of id, var cases.
 @pytest.mark.parametrize('req, keys', [
     ('GetMinMax', {'min', 'max'}),
@@ -133,22 +106,23 @@ def do_test_raster_metadata_minmax(
 @pytest.mark.usefixtures('mm_test_session_committed')
 def test_raster_metadata_minmax(
     raster_metadata,
+    test_wsgi_app,
+    query_params,
     req, keys,
     id_, var, status
 ):
-    do_test_raster_metadata_minmax(
-        raster_metadata,
-        req, keys,
-        id_, var, status
-    )
+    qps = query_params((('request', req), ('id', id_), ('var', var)))
+    test_wsgi_app(raster_metadata, qps, status, keys)
 
 
 # One final test that doesn't fit the parametrization pattern above.
 @pytest.mark.usefixtures('mm_test_session_committed')
-def test_raster_metadata_minmax_no_id(raster_metadata):
-    do_test_raster_metadata_minmax(
-        raster_metadata,
-        'INVALID_REQUEST_TYPE', {},
-        'unique_id_1', 'var_1',
-        '400 Bad Request'
-    )
+def test_raster_metadata_minmax_no_id(
+    raster_metadata, test_wsgi_app, query_params
+):
+    qps = query_params((
+        ('request', 'INVALID_REQUEST_TYPE'),
+        ('id', 'unique_id_1'),
+        ('var', 'var_1')
+    ))
+    test_wsgi_app(raster_metadata, qps, '400 Bad Request', {})
