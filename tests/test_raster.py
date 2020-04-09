@@ -62,9 +62,9 @@ def test_db_raster_configurator(
 @pytest.mark.parametrize('root_url', [
     'http://root.ca/',
 ])
+@pytest.mark.usefixtures('mm_test_session_committed')
 def test_ensemble_catalog(
     mm_database_dsn,
-    mm_test_session_committed,
     ensemble1,
     ensemble1_data_files,
     root_url,
@@ -85,25 +85,66 @@ def test_ensemble_catalog(
         for df in ensemble1_data_files
     }
 
-def test_raster_metadata_minmax(raster_metadata):
-    req = Request.blank('?request=GetMinMax&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
+
+def query_params(nv_pairs):
+    return '&'.join(
+        '{}={}'.format(name, value)
+        for name, value in nv_pairs if value is not None
+    )
+
+
+@pytest.mark.parametrize('id, var, status', [
+    ('unique_id_1', 'var_1', '200 OK'),
+    ('unique_id_1', 'var_2', '200 OK'),
+    ('unique_id_2', 'var_3', '200 OK'),
+    ('unique_id_3', 'var_4', '200 OK'),
+    ('unique_id_1', 'var_3', '404 Not Found'),
+    ('unique_id_1', 'wrong', '404 Not Found'),
+    ('wrong', 'var_4', '404 Not Found'),
+    (None, 'var_1', '400 Bad Request'),
+    ('unique_id_1', None, '400 Bad Request'),
+    (None, None, '400 Bad Request'),
+])
+@pytest.mark.usefixtures('mm_test_session_committed')
+def test_raster_metadata_minmax(raster_metadata, id, var, status):
+    qps = query_params((('id', id), ('var', var)))
+    req = Request.blank('?request=GetMinMax&{}'.format(qps))
     resp = req.get_response(raster_metadata)
 
-    assert resp.status == '200 OK'
-    assert resp.content_type == 'application/json'
+    assert resp.status == status
+    if status != '200 OK':
+        return
 
+    assert resp.content_type == 'application/json'
     stats = json.loads(resp.body)
     assert len(stats) == 2
     assert set(stats.keys()) == set(['max', 'min'])
 
 
-def test_raster_metadata_minmax_w_units(raster_metadata):
-    req = Request.blank('?request=GetMinMaxWithUnits&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
+@pytest.mark.parametrize('id, var, status', [
+    ('unique_id_1', 'var_1', '200 OK'),
+    ('unique_id_1', 'var_2', '200 OK'),
+    ('unique_id_2', 'var_3', '200 OK'),
+    ('unique_id_3', 'var_4', '200 OK'),
+    ('unique_id_1', 'var_3', '404 Not Found'),
+    ('unique_id_1', 'wrong', '404 Not Found'),
+    ('wrong', 'var_4', '404 Not Found'),
+    (None, 'var_1', '400 Bad Request'),
+    ('unique_id_1', None, '400 Bad Request'),
+    (None, None, '400 Bad Request'),
+])
+@pytest.mark.usefixtures('mm_test_session_committed')
+def test_raster_metadata_minmax_w_units(raster_metadata, id, var, status):
+    qps = query_params((('id', id), ('var', var)))
+    req = Request.blank('?request=GetMinMaxWithUnits&{}'.format(qps))
+    # req = Request.blank('?request=GetMinMaxWithUnits&id=pr-tasmax-tasmin_day_BCSD-ANUSPLIN300-CanESM2_historical-rcp26_r1i1p1_19500101-21001231&var=tasmax')
     resp = req.get_response(raster_metadata)
 
-    assert resp.status == '200 OK'
-    assert resp.content_type == 'application/json'
+    assert resp.status == status
+    if status != '200 OK':
+        return
 
+    assert resp.content_type == 'application/json'
     stats = json.loads(resp.body)
     assert len(stats) == 3
     assert set(stats.keys()) == set(['max', 'min', 'units'])

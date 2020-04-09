@@ -300,7 +300,7 @@ def mm_test_session_objects(
 def mm_test_session(mm_empty_session, mm_test_session_objects):
     s = mm_empty_session
     for obj in mm_test_session_objects:
-        print('### mm_test_session: add', obj)
+        # print('### mm_test_session: add', obj)
         s.add(obj)
         s.flush()
     yield s
@@ -319,28 +319,33 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
     # after ourselves. And commit that cleanup.
 
     s = mm_test_session
-    print('### mm_test_session_committed: setup commit')
+    # print('### mm_test_session_committed: setup commit')
     s.commit()
     yield s
     for obj in reversed(mm_test_session_objects):
-        print('### mm_test_session_committed: delete', obj)
+        # print('### mm_test_session_committed: delete', obj)
         s.delete(obj)
         s.flush()
-    print('### mm_test_session_committed: teardown commit')
+    # print('### mm_test_session_committed: teardown commit')
     s.commit()
 
+
+# WSGI apps
 
 @pytest.fixture(scope="function")
 def ensemble_member_lister():
     return EnsembleMemberLister(modelmeta.test_dsn)
 
+
 @pytest.fixture(scope="function")
-def raster_metadata():
-    return RasterMetadata(modelmeta.test_dsn)
+def raster_metadata(mm_database_dsn):
+    return RasterMetadata(mm_database_dsn)
+
 
 @pytest.fixture(scope="function")
 def mm_session():
     return modelmeta.test_session()
+
 
 @pytest.fixture(scope="function")
 def mm_dsn():
