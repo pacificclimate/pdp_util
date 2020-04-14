@@ -78,7 +78,7 @@ def conn_params(test_session):
 #######################################################################
 # Test fixtures for code dependent on modelmeta database
 
-# TODO: Factor out common engine creation
+# TODO: Factor out common engine creation (common with crmp database above)
 
 @pytest.fixture(scope='session')
 def mm_database_dsn():
@@ -88,22 +88,29 @@ def mm_database_dsn():
 
 
 @pytest.fixture(scope='session')
-def mm_engine(mm_database_dsn):
+def mm_schema_name():
+    return 'test_meta'
+
+
+@pytest.fixture(scope='session')
+def mm_engine(mm_database_dsn, mm_schema_name):
     """Test-session-wide database engine"""
     engine = create_engine(mm_database_dsn)
     engine.execute("create extension postgis")
-    engine.execute(CreateSchema('test_meta'))
+    engine.execute(CreateSchema(mm_schema_name))
     modelmeta.Base.metadata.create_all(bind=engine)
     yield engine
     engine.dispose()
 
 
 @pytest.fixture(scope='function')
-def mm_empty_session(mm_engine):
+def mm_empty_session(mm_engine, mm_schema_name):
     """Single-test database session.
     All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
-    session.execute('SET search_path TO test_meta, public')
+    session.execute(
+        'SET search_path TO test_meta, public'.format(mm_schema_name)
+    )
     yield session
     session.rollback()
     session.close()
