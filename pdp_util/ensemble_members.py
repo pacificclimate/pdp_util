@@ -30,7 +30,7 @@ class EnsembleMemberLister(object):
                 #  return a json response with an empty array, consistent with
                 #  the datatype for other ensemble names. OR, possibly better,
                 #  it should return a 404 not found -- because, like, ensemble
-                #  not found. But god only knows what depends on this choice.
+                #  not found. But goodness knows what depends on this choice.
                 start_response('200 OK', [('Content-type','text/plain; charset=utf-8')])
                 return ['']
 
