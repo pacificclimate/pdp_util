@@ -76,7 +76,7 @@ def test_ensemble_catalog(
         'root_url': root_url,
     }
     app = EnsembleCatalog(mm_database_dsn, config)
-    body = test_wsgi_app(app, url, '200 OK', 'application/json', None)
+    resp, body = test_wsgi_app(app, url, '200 OK', 'application/json')
     assert body == {
         df.unique_id: '{}{}'.format(root_url, basename(df.filename))
         for df in ensemble_1_data_files
@@ -88,17 +88,17 @@ def test_ensemble_catalog(
     ('GetMinMax', {'min', 'max'}),
     ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
 ])
-@pytest.mark.parametrize('id_, var, status', [
-    ('unique_id_1', 'var_1', '200 OK'),
-    ('unique_id_1', 'var_2', '200 OK'),
-    ('unique_id_2', 'var_3', '200 OK'),
-    ('unique_id_3', 'var_4', '200 OK'),
-    ('unique_id_1', 'var_3', '404 Not Found'),
-    ('unique_id_1', 'wrong', '404 Not Found'),
-    ('wrong', 'var_4', '404 Not Found'),
-    (None, 'var_1', '400 Bad Request'),
-    ('unique_id_1', None, '400 Bad Request'),
-    (None, None, '400 Bad Request'),
+@pytest.mark.parametrize('id_, var, status, content_type', [
+    ('unique_id_1', 'var_1', '200 OK', 'application/json'),
+    ('unique_id_1', 'var_2', '200 OK', 'application/json'),
+    ('unique_id_2', 'var_3', '200 OK', 'application/json'),
+    ('unique_id_3', 'var_4', '200 OK', 'application/json'),
+    ('unique_id_1', 'var_3', '404 Not Found', 'application/json'),
+    ('unique_id_1', 'wrong', '404 Not Found', 'application/json'),
+    ('wrong', 'var_4', '404 Not Found', 'application/json'),
+    (None, 'var_1', '400 Bad Request', None),
+    ('unique_id_1', None, '400 Bad Request', None),
+    (None, None, '400 Bad Request', None),
 ])
 @pytest.mark.usefixtures('mm_test_session_committed')
 def test_raster_metadata_minmax(
@@ -106,10 +106,12 @@ def test_raster_metadata_minmax(
     test_wsgi_app,
     query_params,
     req, keys,
-    id_, var, status
+    id_, var, status, content_type,
 ):
-    url = query_params((('request', req), ('id', id_), ('var', var)))
-    test_wsgi_app(raster_metadata, url, status, 'application/json', keys)
+    url = query_params(('request', req), ('id', id_), ('var', var))
+    resp, body = test_wsgi_app(raster_metadata, url, status, content_type)
+    if status[:3] == '200':
+        assert set(body.keys()) == keys
 
 
 # One final test that doesn't fit the parametrization pattern above.
@@ -117,9 +119,9 @@ def test_raster_metadata_minmax(
 def test_raster_metadata_minmax_no_id(
     raster_metadata, test_wsgi_app, query_params
 ):
-    url = query_params((
+    url = query_params(
         ('request', 'INVALID_REQUEST_TYPE'),
         ('id', 'unique_id_1'),
         ('var', 'var_1')
-    ))
-    test_wsgi_app(raster_metadata, url, '400 Bad Request', None, None)
+    )
+    test_wsgi_app(raster_metadata, url, '400 Bad Request', None)

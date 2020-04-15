@@ -453,8 +453,10 @@ def raster_metadata(mm_database_dsn):
 
 @pytest.fixture(scope="session")
 def query_params():
-    """Returns a query parameter string formed from name-value pairs."""
-    def f(nv_pairs):
+    """Returns a query parameter string formed from name-value pairs.
+    Each pair is an argument; any number may be provided.
+    """
+    def f(*nv_pairs):
         return '?' + '&'.join(
             '{}={}'.format(name, value)
             for name, value in nv_pairs if value is not None
@@ -467,20 +469,16 @@ def test_wsgi_app():
     """Generic WSGI app test
     Note: It's OK to name a fixture with test_
     """
-    def f(app, url, status, content_type, keys):
+    def f(app, url, status, content_type):
         req = Request.blank(url)
         resp = req.get_response(app)
 
         assert resp.status == status
-        if status != '200 OK':
-            return resp
-
         assert resp.content_type == content_type
-        if content_type != 'application/json':
-            return resp
 
-        body = json.loads(resp.body)
-        if keys is not None:
-            assert set(body.keys()) == keys
-        return body
+        if content_type != 'application/json':
+            return resp, None
+
+        json_body = json.loads(resp.body)
+        return resp, json_body
     return f
