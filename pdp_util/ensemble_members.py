@@ -7,6 +7,7 @@ from numpy import array
 from pdp_util import session_scope
 from modelmeta import *
 
+
 class EnsembleMemberLister(object):
     # TODO: Measure performance with thousands of elements
     def __init__(self, dsn):
@@ -22,23 +23,22 @@ class EnsembleMemberLister(object):
             start_response('400 Bad Request', [])
             return ["Required parameter 'ensemble_name' not specified"]
 
+        JSON_headers = [('Content-type', 'application/json; charset=utf-8')]
         with self.session_scope_factory() as sesh:
             ensemble = sesh.query(Ensemble).filter(Ensemble.name == ensemble_name).first()
 
             if not ensemble: # Result does not contain any row therefore ensemble does not exist
-                # TODO: Instead of returning a text/plain response, this should
-                #  return a json response with an empty array, consistent with
-                #  the datatype for other ensemble names. OR, possibly better,
-                #  it should return a 404 not found -- because, like, ensemble
-                #  not found. But goodness knows what depends on this choice.
-                start_response('200 OK', [('Content-type','text/plain; charset=utf-8')])
-                return ['']
+                start_response('404 Not Found', JSON_headers)
+                return dumps({
+                    "code": 404,
+                    "message": "Not Found",
+                    "details":
+                        "Ensemble named '{}' not found".format(ensemble_name)
+                })
 
             tuples = [x for x in self.list_stuff(ensemble)] # query is lazy load, so must be assigned within scope
 
-        status = '200 OK'
-        response_headers = [('Content-type','application/json; charset=utf-8')]
-        start_response(status, response_headers)
+        start_response('200 OK', JSON_headers)
         d = OrderedDict(sorted(dictify(array(tuples)).items(), key=lambda t:t[0]))
         return dumps(d)
 

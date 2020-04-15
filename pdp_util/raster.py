@@ -22,6 +22,22 @@ config = {'name': 'testing-server',
                        ]
           }
 
+JSON_headers = [('Content-type', 'application/json; charset=utf-8')]
+
+
+def response_200(start_response, body):
+    start_response('200 OK', JSON_headers)
+    return dumps(body)
+
+
+def response_404(start_response, details):
+    start_response('404 Not Found', JSON_headers)
+    return dumps({
+        "code": 404,
+        "message": "Not Found",
+        "details": details
+    })
+
 
 class RasterServer(DapServer):
     '''WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters'''
@@ -66,8 +82,10 @@ class RasterCatalog(RasterServer):
         elif req.path_info.split('.')[-1] in ['das', 'dds']:
             return super(RasterCatalog, self).__call__(environ, start_response)
         else:
-            start_response('404 Not Found', [])
-            return [str(req.path_info), ' not found']
+            return response_404(
+                start_response,
+                "URL path '{}' not found".format(str(req.path_info))
+            )
 
 class EnsembleCatalog(object):
     '''WSGI app to list an ensemble catalog'''
@@ -121,7 +139,10 @@ class RasterMetadata(object):
         '''
         Fuction to handle min/max requests to the MDDB.
 
-        Requires `id` and `var` as url parameters and returns a json object with min/max keys. Returns 400 if `id` or `var` not specified, or 404 if id/var combo not found in the MDDB
+        Requires `id` and `var` as url parameters and returns a json object
+        with min/max keys.
+        Returns 400 if `id` or `var` not specified,
+        or 404 if id/var combo not found in the MDDB
 
         :param req: Request object containing parsed url parameters
         :type req: webob.request.Request
@@ -145,24 +166,30 @@ class RasterMetadata(object):
                 .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
 
         if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
-            start_response('404 Not Found', [])
-            return ['Unable to find requested id/var combo']
+            return response_404(
+                start_response,
+                "Unable to find requested id/var combo"
+            )
 
         if r.count() > 1: # Result has multiple rows, panic
-            start_response('404 Not Found', [])
-            return ['Multiple matching id/var combos. This should not happen.']
+            return response_404(
+                start_response,
+                "Multiple matching id/var combos. This should not happen."
+            )
 
         mn, mx = r.first()
         d = {'min': mn, 'max': mx }
 
-        start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
-        return dumps(d)
+        return response_200(start_response, d)
 
     def getMinMaxWithUnits(self, environ, start_response, req):
         '''
         Fuction to handle min/max requests to the MDDB.
 
-        Requires `id` and `var` as url parameters and returns a json object with min/max keys. Returns 400 if `id` or `var` not specified, or 404 if id/var combo not found in the MDDB
+        Requires `id` and `var` as url parameters and returns a json object
+        with min/max keys.
+        Returns 400 if `id` or `var` not specified,
+        or 404 if id/var combo not found in the MDDB
 
         :param req: Request object containing parsed url parameters
         :type req: webob.request.Request
@@ -187,18 +214,21 @@ class RasterMetadata(object):
                 .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
 
         if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
-            start_response('404 Not Found', [])
-            return ['Unable to find requested id/var combo']
+            return response_404(
+                start_response,
+                "Unable to find requested id/var combo"
+            )
 
         if r.count() > 1: # Result has multiple rows, panic
-            start_response('404 Not Found', [])
-            return ['Multiple matching id/var combos. This should not happen.']
+            return response_404(
+                start_response,
+                "Multiple matching id/var combos. This should not happen."
+            )
 
         mn, mx, units = r.first()
         d = {'min': mn, 'max': mx , 'units': units}
 
-        start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
-        return dumps(d)
+        return response_200(start_response, d)
 
 def db_raster_catalog(session, ensemble, root_url):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
