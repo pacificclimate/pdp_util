@@ -138,8 +138,8 @@ def make_run(i, model, emission):
     return Run(
         id=i,
         name='emission_{}'.format(i),
-        model_id=model.id,
-        emission_id=emission.id,
+        model=model,
+        emission=emission,
     )
 
 
@@ -180,13 +180,14 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     )
 
 
-def make_ensemble(id):
+def make_ensemble(id, data_file_variables):
     return Ensemble(
         id=id,
         changes='wonder what this is for',
         description='Ensemble {}'.format(id),
         name='ensemble_{}'.format(id),
-        version=float(id)
+        version=float(id),
+        data_file_variables=data_file_variables,
     )
 
 
@@ -254,14 +255,11 @@ def mm_all_database_objects():
         (data_files[1], variable_aliases[1]),   # var 2, uid 1
         (data_files[2], variable_aliases[1]),   # var 3, uid 2
     ])
-    ensembles = make(make_ensemble, 3)
-    ensemble_dfvs = make(make_ensemble_dfvs, [
-        (ensembles[0], dfv_dsg_tss[0]),
-        (ensembles[0], dfv_dsg_tss[2]),
-
-        (ensembles[1], dfv_dsg_tss[2]),
-        (ensembles[1], dfv_dsg_tss[3]),
-    ], auto_ids=False)
+    ensembles = make(make_ensemble, [
+        [dfv_dsg_tss[0], dfv_dsg_tss[2]],
+        [dfv_dsg_tss[2], dfv_dsg_tss[3]],
+        [],
+    ])
     # TODO: This doesn't have to be an ordered dict any more
     return OrderedDict([
         ('models', models),
@@ -271,7 +269,6 @@ def mm_all_database_objects():
         ('variable_aliases', variable_aliases),
         ('dfv_dsg_tss', dfv_dsg_tss),
         ('ensembles', ensembles),
-        ('ensemble_dfvs', ensemble_dfvs),        
     ])
 
 
@@ -293,7 +290,6 @@ def mm_test_session_objects(mm_all_database_objects):
             ('dfv_dsg_tss', all_),
             # Leave out 3rd ensemble so that we have a not-found one
             ('ensembles', slice(2)),
-            ('ensemble_dfvs', all_),
         ])
     )
 
@@ -389,11 +385,6 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
     s.commit()
     yield s
     for name, objects in reversed(mm_test_session_objects.items()):
-        # Certain objects must be omitted from explicit delete because
-        # cascading delete from previous objects has already deleted them.
-        # Do we hate the continue statement? We do.
-        if name in ('ensemble_dfvs',):
-            continue
         for obj in reversed(objects):
             s.delete(obj)
             s.flush()
