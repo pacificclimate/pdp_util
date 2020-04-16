@@ -121,43 +121,6 @@ def mm_empty_session(mm_engine, mm_schema_name):
 
 # Database test objects
 
-# Overview
-#
-# We set up the following objects which can be added to the database:
-#
-# model_1: Model
-#
-# emission_1: Emission
-# emission_2: Emission
-#
-# run_11: Run(model_1, emission_1)
-# run_12: Run(model_1, emission_2)
-#
-# data_file_1: DataFile(run_11)
-# data_file_2: DataFile(run_12)
-# data_file_3: DataFile(run_11)
-#
-# variable_alias_1: VariableAlias
-# variable_alias_2: VariableAlias
-#
-# dfv_dsg_time_series_11:
-#   DataFileVariableDSGTimeSeries(data_file_1, variable_alias_1)
-# dfv_dsg_time_series_12:
-#   DataFileVariableDSGTimeSeries(data_file_1, variable_alias_2)
-# dfv_dsg_time_series_21:
-#   DataFileVariableDSGTimeSeries(data_file_2, variable_alias_2)
-# dfv_dsg_time_series_31:
-#   DataFileVariableDSGTimeSeries(data_file_3, variable_alias_2)
-#
-# ensemble_1: Ensemble
-#   dfv_dsg_time_series_11
-#   dfv_dsg_time_series_21
-#
-# ensemble_2: Ensemble
-#   dfv_dsg_time_series_21
-#   dfv_dsg_time_series_31
-
-
 # Model
 
 def make_model(i):
@@ -267,7 +230,7 @@ def variable_alias_2():
 
 # DataFileVariableDSGTimeSeries
 
-def make_test_dfv_dsg_time_series(i, file=None, variable_alias=None):
+def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     return DataFileVariableDSGTimeSeries(
         id=i,
         derivation_method='derivation_method_{}'.format(i),
@@ -283,25 +246,25 @@ def make_test_dfv_dsg_time_series(i, file=None, variable_alias=None):
 
 @pytest.fixture(scope='function')
 def dfv_dsg_time_series_11(data_file_1, variable_alias_1):
-    return make_test_dfv_dsg_time_series(
+    return make_dfv_dsg_time_series(
         1, file=data_file_1, variable_alias=variable_alias_1)
 
 
 @pytest.fixture(scope='function')
 def dfv_dsg_time_series_12(data_file_1, variable_alias_2):
-    return make_test_dfv_dsg_time_series(
+    return make_dfv_dsg_time_series(
         2, file=data_file_1, variable_alias=variable_alias_2)
 
 
 @pytest.fixture(scope='function')
 def dfv_dsg_time_series_21(data_file_2, variable_alias_1):
-    return make_test_dfv_dsg_time_series(
+    return make_dfv_dsg_time_series(
         3, file=data_file_2, variable_alias=variable_alias_1)
 
 
 @pytest.fixture(scope='function')
 def dfv_dsg_time_series_31(data_file_3, variable_alias_1):
-    return make_test_dfv_dsg_time_series(
+    return make_dfv_dsg_time_series(
         4, file=data_file_3, variable_alias=variable_alias_1)
 
 
@@ -391,6 +354,43 @@ def objects_subset(object_dict, subset):
     )
 
 
+# Overview
+#
+# We set up the following objects which can be added to the database:
+#
+# model_1: Model
+#
+# emission_1: Emission
+# emission_2: Emission
+#
+# run_11: Run(model_1, emission_1)
+# run_12: Run(model_1, emission_2)
+#
+# data_file_1: DataFile(run_11)
+# data_file_2: DataFile(run_12)
+# data_file_3: DataFile(run_11)
+#
+# variable_alias_1: VariableAlias
+# variable_alias_2: VariableAlias
+#
+# dfv_dsg_time_series_11: 0
+#   DataFileVariableDSGTimeSeries(data_file_1 0, variable_alias_1)
+# dfv_dsg_time_series_12: 1
+#   DataFileVariableDSGTimeSeries(data_file_1 0, variable_alias_2)
+# dfv_dsg_time_series_21: 2
+#   DataFileVariableDSGTimeSeries(data_file_2 1, variable_alias_2)
+# dfv_dsg_time_series_31: 3
+#   DataFileVariableDSGTimeSeries(data_file_3 2, variable_alias_2)
+#
+# ensemble_1: Ensemble
+#   dfv_dsg_time_series_11
+#   dfv_dsg_time_series_21
+#
+# ensemble_2: Ensemble
+#   dfv_dsg_time_series_21
+#   dfv_dsg_time_series_31
+
+
 @pytest.fixture(scope="function")
 def mm_all_database_objects():
     """Return an ordered dict full of *newly created* database objects.
@@ -413,11 +413,11 @@ def mm_all_database_objects():
     ])
     data_files = make(make_data_file, [runs[0], runs[1], runs[0]])
     variable_aliases = make(make_variable_alias, 2)
-    dfv_dsg_tss = make(make_test_dfv_dsg_time_series, [
-        (data_files[0], variable_aliases[0]),
-        (data_files[0], variable_aliases[1]),
-        (data_files[1], variable_aliases[1]),
-        (data_files[2], variable_aliases[1]),
+    dfv_dsg_tss = make(make_dfv_dsg_time_series, [
+        (data_files[0], variable_aliases[0]),   # var 0, uid 0
+        (data_files[0], variable_aliases[1]),   # var 1, uid 0
+        (data_files[1], variable_aliases[1]),   # var 2, uid 1
+        (data_files[2], variable_aliases[1]),   # var 3, uid 2
     ])
     ensembles = make(make_ensemble, 3)
     ensemble_dfvs = make(make_ensemble_dfvs, [
@@ -435,7 +435,7 @@ def mm_all_database_objects():
         ('data_files', data_files),
         ('variable_aliases', variable_aliases),
         ('dfv_dsg_tss', dfv_dsg_tss),
-        ('ensembles', ensembles),  # Leave out 3rd so that we have a not found ensemble
+        ('ensembles', ensembles),
         ('ensemble_dfvs', ensemble_dfvs),        
     ])
 

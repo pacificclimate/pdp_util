@@ -6,98 +6,93 @@ from pdp_util.raster import (
 import pytest
 
 
-def test_ensemble_1_files(mm_test_session, ensemble_1, ensemble_1_data_files):
-    result = ensemble_files(mm_test_session, ensemble_1.name)
-    assert result == {df.unique_id: df.filename for df in ensemble_1_data_files}
+@pytest.mark.parametrize("ensemble", [0, 1], indirect=["ensemble"])
+def test_ensemble_files(mm_test_session, ensemble):
+    result = ensemble_files(mm_test_session, ensemble.name)
+    data_files = {dfv.file for dfv in ensemble.data_file_variables}
+    assert result == {df.unique_id: df.filename for df in data_files}
 
 
-def test_ensemble_2_files(mm_test_session, ensemble_2, ensemble_2_data_files):
-    result = ensemble_files(mm_test_session, ensemble_2.name)
-    assert result == {df.unique_id: df.filename for df in ensemble_2_data_files}
-
-
+@pytest.mark.parametrize("ensemble", [0, 1], indirect=["ensemble"])
 @pytest.mark.parametrize('root_url', ['foo/', 'bar/'])
-def test_db_raster_catalog(
-    mm_test_session, ensemble_1, ensemble_1_data_files, root_url
-):
-    result = db_raster_catalog(mm_test_session, ensemble_1.name, root_url)
+def test_db_raster_catalog(mm_test_session, ensemble, root_url):
+    result = db_raster_catalog(mm_test_session, ensemble.name, root_url)
+    data_files = {dfv.file for dfv in ensemble.data_file_variables}
     assert result == {
         df.unique_id: '{}{}'.format(root_url, basename(df.filename))
-        for df in ensemble_1_data_files
+        for df in data_files
     }
 
 
-@pytest.mark.parametrize(
-    'name, version, api_version, ensemble, root_url, handlers',
-    [
-        ('A name', 'Version 0.0.0.1', '0.0', 'ensemble_1', 'http://root.ca/',
-         [
-             {'url': 'data_file_1.nc', 'file': '/storage/data_file_1.nc'},
-             {'url': 'data_file_2.nc', 'file': '/storage/data_file_2.nc'},
-         ]),
+@pytest.mark.parametrize("ensemble", [0, 1], indirect=["ensemble"])
+@pytest.mark.parametrize('name, version, api_version, root_url', [
+    ('A name', 'Version 0.0.0.1', '0.0', 'http://example.com/'),
 ])
 def test_db_raster_configurator(
-    mm_test_session, name, version, api_version, ensemble, root_url, handlers,
+    mm_test_session, name, version, api_version, ensemble, root_url,
 ):
     result = db_raster_configurator(
-        mm_test_session, name, version, api_version, ensemble, root_url,
-    )
-    assert all(
-        x in result.items()
-        for x in {
-            'root_url': root_url,
-            'name': name,
-            'version': version,
-            'ensemble': ensemble,
-            'api_version': api_version,
-        }.items()
-    )
-    assert all(
-        x in result['handlers']
-        for x in handlers
+        mm_test_session, name, version, api_version, ensemble.name, root_url,
     )
 
+    for x in {
+        'root_url': root_url,
+        'name': name,
+        'version': version,
+        'ensemble': ensemble.name,
+        'api_version': api_version,
+    }.items():
+        assert x in result.items()
+    data_files = {dfv.file for dfv in ensemble.data_file_variables}
 
+    handlers = [
+        {'url': basename(df.filename), 'file': df.filename}
+        for df in data_files
+    ]
+    assert len(result['handlers']) == len(handlers)
+    for x in result['handlers']:
+        assert x in handlers
+
+
+@pytest.mark.parametrize("ensemble", [0, 1], indirect=["ensemble"])
 @pytest.mark.parametrize('url', ['', '/url/is/irrelevant'])
-@pytest.mark.parametrize('root_url', [
-    'http://root.ca/',
-])
+@pytest.mark.parametrize('root_url', ['http://example.com/'])
 @pytest.mark.usefixtures('mm_test_session_committed')
 def test_ensemble_catalog(
     mm_database_dsn,
     test_wsgi_app,
-    ensemble_1,
-    ensemble_1_data_files,
+    ensemble,
     root_url,
     url
 ):
     config = {
-        'ensemble': ensemble_1.name,
+        'ensemble': ensemble.name,
         'root_url': root_url,
     }
     app = EnsembleCatalog(mm_database_dsn, config)
     resp, body = test_wsgi_app(app, url, '200 OK', 'application/json')
+    data_files = {dfv.file for dfv in ensemble.data_file_variables}
     assert body == {
         df.unique_id: '{}{}'.format(root_url, basename(df.filename))
-        for df in ensemble_1_data_files
+        for df in data_files
     }
 
 
 # Valid request= types, variety of id, var cases.
 @pytest.mark.parametrize('req, keys', [
     ('GetMinMax', {'min', 'max'}),
-    ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
+    # ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
 ])
 @pytest.mark.parametrize('id_, var, status, content_type', [
-    ('unique_id_1', 'var_1', '200 OK', 'application/json'),
+    ('unique_id_0', 'var_0', '200 OK', 'application/json'),
+    ('unique_id_0', 'var_1', '200 OK', 'application/json'),
     ('unique_id_1', 'var_2', '200 OK', 'application/json'),
     ('unique_id_2', 'var_3', '200 OK', 'application/json'),
-    ('unique_id_3', 'var_4', '200 OK', 'application/json'),
-    ('unique_id_1', 'var_3', '404 Not Found', 'application/json'),
-    ('unique_id_1', 'wrong', '404 Not Found', 'application/json'),
-    ('wrong', 'var_4', '404 Not Found', 'application/json'),
-    (None, 'var_1', '400 Bad Request', None),
-    ('unique_id_1', None, '400 Bad Request', None),
+    ('unique_id_1', 'var_0', '404 Not Found', 'application/json'),
+    ('unique_id_0', 'wrong', '404 Not Found', 'application/json'),
+    ('wrong', 'var_0', '404 Not Found', 'application/json'),
+    (None, 'var_0', '400 Bad Request', None),
+    ('unique_id_0', None, '400 Bad Request', None),
     (None, None, '400 Bad Request', None),
 ])
 @pytest.mark.usefixtures('mm_test_session_committed')
