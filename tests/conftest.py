@@ -17,7 +17,6 @@ from modelmeta import (
     DataFileVariableDSGTimeSeries,
     VariableAlias,
     Ensemble,
-    EnsembleDataFileVariables,
 )
 
 from sqlalchemy import create_engine
@@ -78,6 +77,28 @@ def conn_params(test_session):
 
 #######################################################################
 # Test fixtures for code dependent on modelmeta database
+
+# Notes:
+#
+# 1. Some of the subjects under test establish a completely independent
+# connection with the database, taking only the database DSN (not a session) as
+# an argument. Therefore test contents in the database for such subjects must be
+# fully and irrevocably committed to the database. Such a commit *cannot* be
+# surrounded by a transaction that is later used to roll back the commit; the
+# objects thus committed are only visible within the transaction, and that
+# necessarily excludes independent database connections. Therefore we have
+# fixtures that truly commit objects to the database. To undo such commits they
+# must delete those objects.
+#
+# 2. SQLAlchemy does not permit adding an object again after it has been
+# deleted. An alternative, in fact recommended in the message emitted with the
+# error for this attempted action, is to make the object transient again with
+# the make_transient() function. Unfortunately, make_transient() causes most
+# attributes to be nulled, and the resulting object is useless for our purposes.
+# Instead, we find ourselves forced to create new database objects for each
+# test setup of the database. The new objects can be inserted again after their
+# earlier version (different in identity but identical in content) has been
+# deleted.
 
 # TODO: Factor out common engine creation (common with crmp database above)
 
@@ -349,6 +370,9 @@ def fixture_ensemble_dfv(request, mm_all_database_objects):
 
 @pytest.fixture(scope="function")
 def mm_test_session(mm_empty_session, mm_test_session_objects):
+    """Session with test objects added. These additions are rolled back
+    by mm_empty_session.
+    """
     s = mm_empty_session
     for name, objects in mm_test_session_objects.items():
         s.add_all(objects)
