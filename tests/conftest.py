@@ -1,6 +1,7 @@
 import datetime
 import logging
 import json
+from collections import OrderedDict
 from pkg_resources import resource_filename
 from webob.request import Request
 
@@ -21,6 +22,8 @@ from modelmeta import (
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import sqlalchemy.orm.exc
+from sqlalchemy.orm.session import make_transient, make_transient_to_detached
 from sqlalchemy.schema import CreateSchema
 import testing.postgresql
 
@@ -323,6 +326,7 @@ def ensemble_1():
 def ensemble_2():
     return make_ensemble(2)
 
+
 # EnsembleDataFileVariables: tag DFVs with Ensembles
 
 def make_ensemble_dfvs(ensemble, dfv):
@@ -360,58 +364,158 @@ def ensemble_2_data_files(data_file_3, data_file_2):
     return {data_file_2, data_file_3}
 
 
-# Database sessions
+# Database wiring
 
-@pytest.fixture(scope="function")
-def mm_test_session_objects(
-    model_1,
-    emission_1,
-    emission_2,
-    run_11,
-    run_12,
-    data_file_1,
-    data_file_2,
-    data_file_3,
-    dfv_dsg_time_series_11,
-    dfv_dsg_time_series_12,
-    dfv_dsg_time_series_21,
-    dfv_dsg_time_series_31,
-    ensemble_1,
-    ensemble_2,
-    ensemble_dfvs_1,
-    ensemble_dfvs_2,
-):
-    # Note: Order matters. These objects must be inserted in the order given,
-    # and removed in the reverse order.
-    # Note: Completeness matters. SQLAlchemy will implicitly add objects but
-    # not necessarily implicitly delete them.
-    return (
-        [
-            model_1,
-            emission_1,
-            emission_2,
-            run_11,
-            run_12,
-            data_file_1,
-            data_file_2,
-            data_file_3,
-            dfv_dsg_time_series_11,
-            dfv_dsg_time_series_12,
-            dfv_dsg_time_series_21,
-            dfv_dsg_time_series_31,
-            ensemble_1,
-            ensemble_2,
-        ] +
-        ensemble_dfvs_1 +
-        ensemble_dfvs_2
+def make(maker, arg_list, ids=True):
+    """Make a list of database objects using the given maker and args.
+    Some arg munging for the convenience of the user:
+    - an "arg_list" equal to an integer means no args, but that many items
+    - for an arg_list that is a list, non-tuple items are converted to tuples
+    """
+    def tuplify(x):
+        if type(x) == tuple:
+            return x
+        return tuple((x,))
+    if type(arg_list) == int:
+        return [maker(i) for i in range(arg_list)]
+    if ids:
+        return [maker(i, *tuplify(args)) for i, args in enumerate(arg_list)]
+    else:
+        return [maker(*tuplify(args)) for args in arg_list]
+
+
+def objects_subset(object_dict, subset):
+    return OrderedDict(
+        (key, object_dict[key][slice_])
+        for key, slice_ in subset.items()
     )
 
 
 @pytest.fixture(scope="function")
+def mm_all_database_objects():
+    """Return an ordered dict full of *newly created* database objects.
+
+    A dict because individual object-type fixtures need to select for type.
+
+    An ordered dict because order of insertion (and deletion) in database 
+    matters.
+
+    Newly created objects because attempting delete and then re-insert the same
+    SQLAlchemy object causes an error. And regrettably these objects, when
+    made transient as advised by SQLAlchemy, lose all their attribute values.
+    So new objects it is.
+    """
+    models = make(make_model, 2)
+    emissions = make(make_emission, 2)
+    runs = make(make_run, [
+        (models[0], emissions[0]),
+        (models[0], emissions[1]),
+    ])
+    data_files = make(make_data_file, [runs[0], runs[1], runs[0]])
+    variable_aliases = make(make_variable_alias, 2)
+    dfv_dsg_tss = make(make_test_dfv_dsg_time_series, [
+        (data_files[0], variable_aliases[0]),
+        (data_files[0], variable_aliases[1]),
+        (data_files[1], variable_aliases[1]),
+        (data_files[2], variable_aliases[1]),
+    ])
+    ensembles = make(make_ensemble, 3)
+    ensemble_dfvs = make(make_ensemble_dfvs, [
+        (ensembles[0], dfv_dsg_tss[0]),
+        (ensembles[0], dfv_dsg_tss[2]),
+
+        (ensembles[1], dfv_dsg_tss[2]),
+        (ensembles[1], dfv_dsg_tss[3]),
+    ], ids=False)
+    # TODO: This doesn't have to be an ordered dict any more
+    return OrderedDict([
+        ('models', models),
+        ('emissions', emissions),
+        ('runs', runs),
+        ('data_files', data_files),
+        ('variable_aliases', variable_aliases),
+        ('dfv_dsg_tss', dfv_dsg_tss),
+        ('ensembles', ensembles),  # Leave out 3rd so that we have a not found ensemble
+        ('ensemble_dfvs', ensemble_dfvs),        
+    ])
+
+
+@pytest.fixture(scope='function')
+def mm_test_session_objects(mm_all_database_objects):
+    """Return a subset of all database objects to be inserted into
+    the test session(s).
+    """
+    all_ = slice(None, None, None)
+    return objects_subset(
+        mm_all_database_objects,
+        # Order counts here
+        OrderedDict([
+            ('models', all_),
+            ('emissions', all_),
+            ('runs', all_),
+            ('data_files', all_),
+            ('variable_aliases', all_),
+            ('dfv_dsg_tss', all_),
+            # Leave out 3rd ensemble so that we have a not-found one
+            ('ensembles', slice(2)),
+            ('ensemble_dfvs', all_),
+        ])
+    )
+
+# Fixtures returning database objects.
+# It would be nice (and apparently simple) to reduce the repetition here,
+# but calling @pytest.fixture in a loop doesn't work -- it replaces the
+# previous fixture(s) rather than creating several of them. Rats.
+
+@pytest.fixture(scope='function')
+def database_object(request, mm_all_database_objects):
+    obj_type, obj_index = request.param
+    return mm_all_database_objects[obj_type][obj_index]
+
+
+@pytest.fixture(scope='function', name="model")
+def fixture_model(request, mm_all_database_objects):
+    return mm_all_database_objects['models'][request.param]
+
+
+@pytest.fixture(scope='function', name="emission")
+def fixture_emission(request, mm_all_database_objects):
+    return mm_all_database_objects['emissions'][request.param]
+
+
+@pytest.fixture(scope='function', name="run")
+def fixture_run(request, mm_all_database_objects):
+    return mm_all_database_objects['runs'][request.param]
+
+
+@pytest.fixture(scope='function', name="data_file")
+def fixture_data_file(request, mm_all_database_objects):
+    return mm_all_database_objects['data_files'][request.param]
+
+
+@pytest.fixture(scope='function', name="variable_alias")
+def fixture_variable_alias(request, mm_all_database_objects):
+    return mm_all_database_objects['variable_aliases'][request.param]
+
+
+@pytest.fixture(scope='function', name="ensemble")
+def fixture_ensemble(request, mm_all_database_objects):
+    return mm_all_database_objects['ensembles'][request.param]
+
+
+@pytest.fixture(scope='function', name="ensemble_dfv")
+def fixture_ensemble_dfv(request, mm_all_database_objects):
+    return mm_all_database_objects['ensemble_dfvs'][request.param]
+
+
+# Database sessions
+
+@pytest.fixture(scope="function")
 def mm_test_session(mm_empty_session, mm_test_session_objects):
     s = mm_empty_session
-    for obj in mm_test_session_objects:
-        s.add(obj)
+    for name, objects in mm_test_session_objects.items():
+        # print('### adding db objects', name)
+        s.add_all(objects)
         s.flush()
     yield s
 
@@ -431,9 +535,17 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
     s = mm_test_session
     s.commit()
     yield s
-    for obj in reversed(mm_test_session_objects):
-        s.delete(obj)
-        s.flush()
+    for name, objects in reversed(mm_test_session_objects.items()):
+        # Certain objects must be omitted from explicit delete because
+        # cascading delete from previous objects has already deleted them.
+        # Do we hate the continue statement? We do.
+        if name in ('ensemble_dfvs',):
+            continue
+        # print('### deleting db objects', name)
+        for obj in reversed(objects):
+            # print('#### deleting obj', obj)
+            s.delete(obj)
+            s.flush()
     s.commit()
 
 
