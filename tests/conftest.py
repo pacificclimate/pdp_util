@@ -6,8 +6,8 @@ from pkg_resources import resource_filename
 from webob.request import Request
 
 import pytest
+
 import pycds
-from pycds import Network, Contact, Station, History, Variable
 import modelmeta
 from modelmeta import (
     Model,
@@ -19,17 +19,15 @@ from modelmeta import (
     Ensemble,
     EnsembleDataFileVariables,
 )
-import sqlalchemy
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import sqlalchemy.orm.exc
-from sqlalchemy.orm.session import make_transient, make_transient_to_detached
 from sqlalchemy.schema import CreateSchema
 import testing.postgresql
 
-import pdp_util
 from pdp_util.ensemble_members import EnsembleMemberLister
 from pdp_util.raster import RasterMetadata
+
 
 @pytest.fixture(scope='session')
 def engine():
@@ -119,9 +117,7 @@ def mm_empty_session(mm_engine, mm_schema_name):
     session.close()
 
 
-# Database test objects
-
-# Model
+# Database test object constructors
 
 def make_model(i):
     return Model(
@@ -131,31 +127,12 @@ def make_model(i):
     )
 
 
-@pytest.fixture(scope='function')
-def model_1():
-    return make_model(1)
-
-
-# Emission
-
 def make_emission(i):
     return Emission(
         id=i,
         short_name='emission_{}'.format(i),
     )
 
-
-@pytest.fixture(scope='function')
-def emission_1():
-    return make_emission(1)
-
-
-@pytest.fixture(scope='function')
-def emission_2():
-    return make_emission(2)
-
-
-# Run
 
 def make_run(i, model, emission):
     return Run(
@@ -165,18 +142,6 @@ def make_run(i, model, emission):
         emission_id=emission.id,
     )
 
-
-@pytest.fixture(scope='function')
-def run_12(model_1, emission_1):
-    return make_run(1, model_1, emission_1)
-
-
-@pytest.fixture(scope='function')
-def run_11(model_1, emission_2):
-    return make_run(2, model_1, emission_2)
-
-
-# DataFile
 
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
@@ -193,23 +158,6 @@ def make_data_file(i, run=None, timeset=None):
     )
 
 
-@pytest.fixture(scope='function')
-def data_file_1(run_11):
-    return make_data_file(1, run_11)
-
-
-@pytest.fixture(scope='function')
-def data_file_2(run_12):
-    return make_data_file(2, run_12)
-
-
-@pytest.fixture(scope='function')
-def data_file_3(run_11):
-    return make_data_file(3, run_11)
-
-
-# VariableAlias
-
 def make_variable_alias(i):
     return VariableAlias(
         long_name='long_name_{}'.format(i),
@@ -217,18 +165,6 @@ def make_variable_alias(i):
         units='units_{}'.format(i),
     )
 
-
-@pytest.fixture(scope='function')
-def variable_alias_1():
-    return make_variable_alias(1)
-
-
-@pytest.fixture(scope='function')
-def variable_alias_2():
-    return make_variable_alias(2)
-
-
-# DataFileVariableDSGTimeSeries
 
 def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     return DataFileVariableDSGTimeSeries(
@@ -244,32 +180,6 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     )
 
 
-@pytest.fixture(scope='function')
-def dfv_dsg_time_series_11(data_file_1, variable_alias_1):
-    return make_dfv_dsg_time_series(
-        1, file=data_file_1, variable_alias=variable_alias_1)
-
-
-@pytest.fixture(scope='function')
-def dfv_dsg_time_series_12(data_file_1, variable_alias_2):
-    return make_dfv_dsg_time_series(
-        2, file=data_file_1, variable_alias=variable_alias_2)
-
-
-@pytest.fixture(scope='function')
-def dfv_dsg_time_series_21(data_file_2, variable_alias_1):
-    return make_dfv_dsg_time_series(
-        3, file=data_file_2, variable_alias=variable_alias_1)
-
-
-@pytest.fixture(scope='function')
-def dfv_dsg_time_series_31(data_file_3, variable_alias_1):
-    return make_dfv_dsg_time_series(
-        4, file=data_file_3, variable_alias=variable_alias_1)
-
-
-# Ensemble
-
 def make_ensemble(id):
     return Ensemble(
         id=id,
@@ -280,18 +190,6 @@ def make_ensemble(id):
     )
 
 
-@pytest.fixture(scope='function')
-def ensemble_1():
-    return make_ensemble(1)
-
-
-@pytest.fixture(scope='function')
-def ensemble_2():
-    return make_ensemble(2)
-
-
-# EnsembleDataFileVariables: tag DFVs with Ensembles
-
 def make_ensemble_dfvs(ensemble, dfv):
     return EnsembleDataFileVariables(
         ensemble_id=ensemble.id,
@@ -299,49 +197,21 @@ def make_ensemble_dfvs(ensemble, dfv):
     )
 
 
-@pytest.fixture(scope='function')
-def ensemble_dfvs_1(ensemble_1, dfv_dsg_time_series_11, dfv_dsg_time_series_21):
-    return [
-        make_ensemble_dfvs(ensemble_1, dfv_dsg_time_series_11),
-        make_ensemble_dfvs(ensemble_1, dfv_dsg_time_series_21),
-    ]
+# Database objects
 
-
-# TODO: Make this, or something like it, drive ensemble_dfvs_1
-@pytest.fixture(scope='function')
-def ensemble_1_data_files(data_file_1, data_file_2):
-    return {data_file_1, data_file_2}
-
-
-@pytest.fixture(scope='function')
-def ensemble_dfvs_2(ensemble_2, dfv_dsg_time_series_21, dfv_dsg_time_series_31):
-    return [
-        make_ensemble_dfvs(ensemble_2, dfv_dsg_time_series_21),
-        make_ensemble_dfvs(ensemble_2, dfv_dsg_time_series_31),
-    ]
-
-
-# TODO: Make this, or something like it, drive ensemble_dfvs_2
-@pytest.fixture(scope='function')
-def ensemble_2_data_files(data_file_3, data_file_2):
-    return {data_file_2, data_file_3}
-
-
-# Database wiring
-
-def make(maker, arg_list, ids=True):
+def make(maker, arg_list, auto_ids=True):
     """Make a list of database objects using the given maker and args.
     Some arg munging for the convenience of the user:
     - an "arg_list" equal to an integer means no args, but that many items
     - for an arg_list that is a list, non-tuple items are converted to tuples
     """
+
     def tuplify(x):
-        if type(x) == tuple:
-            return x
-        return tuple((x,))
+        return x if type(x) == tuple else (x,)
+
     if type(arg_list) == int:
         return [maker(i) for i in range(arg_list)]
-    if ids:
+    if auto_ids:
         return [maker(i, *tuplify(args)) for i, args in enumerate(arg_list)]
     else:
         return [maker(*tuplify(args)) for args in arg_list]
@@ -354,46 +224,11 @@ def objects_subset(object_dict, subset):
     )
 
 
-# Overview
-#
-# We set up the following objects which can be added to the database:
-#
-# model_1: Model
-#
-# emission_1: Emission
-# emission_2: Emission
-#
-# run_11: Run(model_1, emission_1)
-# run_12: Run(model_1, emission_2)
-#
-# data_file_1: DataFile(run_11)
-# data_file_2: DataFile(run_12)
-# data_file_3: DataFile(run_11)
-#
-# variable_alias_1: VariableAlias
-# variable_alias_2: VariableAlias
-#
-# dfv_dsg_time_series_11: 0
-#   DataFileVariableDSGTimeSeries(data_file_1 0, variable_alias_1)
-# dfv_dsg_time_series_12: 1
-#   DataFileVariableDSGTimeSeries(data_file_1 0, variable_alias_2)
-# dfv_dsg_time_series_21: 2
-#   DataFileVariableDSGTimeSeries(data_file_2 1, variable_alias_2)
-# dfv_dsg_time_series_31: 3
-#   DataFileVariableDSGTimeSeries(data_file_3 2, variable_alias_2)
-#
-# ensemble_1: Ensemble
-#   dfv_dsg_time_series_11
-#   dfv_dsg_time_series_21
-#
-# ensemble_2: Ensemble
-#   dfv_dsg_time_series_21
-#   dfv_dsg_time_series_31
-
-
 @pytest.fixture(scope="function")
 def mm_all_database_objects():
-    """Return an ordered dict full of *newly created* database objects.
+    """Return an *ordered dict* full of *newly created* database objects.
+    This is the set of all possible objects that database test sessions
+    might contain. Typically, they contain a subset.
 
     A dict because individual object-type fixtures need to select for type.
 
@@ -426,7 +261,7 @@ def mm_all_database_objects():
 
         (ensembles[1], dfv_dsg_tss[2]),
         (ensembles[1], dfv_dsg_tss[3]),
-    ], ids=False)
+    ], auto_ids=False)
     # TODO: This doesn't have to be an ordered dict any more
     return OrderedDict([
         ('models', models),
@@ -514,7 +349,6 @@ def fixture_ensemble_dfv(request, mm_all_database_objects):
 def mm_test_session(mm_empty_session, mm_test_session_objects):
     s = mm_empty_session
     for name, objects in mm_test_session_objects.items():
-        # print('### adding db objects', name)
         s.add_all(objects)
         s.flush()
     yield s
@@ -541,9 +375,7 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
         # Do we hate the continue statement? We do.
         if name in ('ensemble_dfvs',):
             continue
-        # print('### deleting db objects', name)
         for obj in reversed(objects):
-            # print('#### deleting obj', obj)
             s.delete(obj)
             s.flush()
     s.commit()
