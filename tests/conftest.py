@@ -121,7 +121,6 @@ def mm_empty_session(mm_engine, mm_schema_name):
 
 def make_model(i):
     return Model(
-        id=i,
         short_name='model_{}'.format(i),
         type='model_type'
     )
@@ -129,14 +128,12 @@ def make_model(i):
 
 def make_emission(i):
     return Emission(
-        id=i,
         short_name='emission_{}'.format(i),
     )
 
 
 def make_run(i, model, emission):
     return Run(
-        id=i,
         name='emission_{}'.format(i),
         model=model,
         emission=emission,
@@ -145,7 +142,6 @@ def make_run(i, model, emission):
 
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
-        id=i,
         filename='/storage/data_file_{}.nc'.format(i),
         first_1mib_md5sum='first_1mib_md5sum',
         unique_id='unique_id_{}'.format(i),
@@ -168,7 +164,6 @@ def make_variable_alias(i):
 
 def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     return DataFileVariableDSGTimeSeries(
-        id=i,
         derivation_method='derivation_method_{}'.format(i),
         variable_cell_methods='variable_cell_methods_{}'.format(i),
         netcdf_variable_name='var_{}'.format(i),
@@ -180,21 +175,13 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     )
 
 
-def make_ensemble(id, data_file_variables):
+def make_ensemble(i, data_file_variables):
     return Ensemble(
-        id=id,
         changes='wonder what this is for',
-        description='Ensemble {}'.format(id),
-        name='ensemble_{}'.format(id),
-        version=float(id),
+        description='Ensemble {}'.format(i),
+        name='ensemble_{}'.format(i),
+        version=float(i),
         data_file_variables=data_file_variables,
-    )
-
-
-def make_ensemble_dfvs(ensemble, dfv):
-    return EnsembleDataFileVariables(
-        ensemble_id=ensemble.id,
-        data_file_variable_id=dfv.id,
     )
 
 
