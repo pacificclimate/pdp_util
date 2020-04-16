@@ -6,7 +6,7 @@ import pytest
     (0, '200 OK', 'application/json'),
     (1, '200 OK', 'application/json'),
     (2, '404 Not Found', 'application/json'),
-    # (None, '400 Bad Request', None, None),
+    (None, '400 Bad Request', None),
 ], indirect=['ensemble'])
 @pytest.mark.usefixtures('mm_test_session_committed')
 def test_ensemble_member_lister(
@@ -17,7 +17,7 @@ def test_ensemble_member_lister(
     status,
     content_type,
 ):
-    url = query_params(('ensemble_name', ensemble.name))
+    url = query_params(('ensemble_name', ensemble and ensemble.name))
     resp, body = \
         test_wsgi_app(ensemble_member_lister, url, status, content_type)
     if status[:3] == '200':

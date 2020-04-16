@@ -297,50 +297,69 @@ def mm_test_session_objects(mm_all_database_objects):
         ])
     )
 
+
 # Fixtures returning database objects.
+
+def get_database_object(objects, obj_type, obj_index):
+    if obj_type is None or obj_index is None:
+        return None
+    return objects[obj_type][obj_index]
+
+
+@pytest.fixture(scope='function')
+def database_object(request, mm_all_database_objects):
+    return get_database_object(mm_all_database_objects, *request.param)
+
+
 # It would be nice (and apparently simple) to reduce the repetition here,
 # but calling @pytest.fixture in a loop doesn't work -- it replaces the
 # previous fixture(s) rather than creating several of them. Rats.
 
-@pytest.fixture(scope='function')
-def database_object(request, mm_all_database_objects):
-    obj_type, obj_index = request.param
-    return mm_all_database_objects[obj_type][obj_index]
-
-
 @pytest.fixture(scope='function', name="model")
 def fixture_model(request, mm_all_database_objects):
-    return mm_all_database_objects['models'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'models', request.param
+    )
 
 
 @pytest.fixture(scope='function', name="emission")
 def fixture_emission(request, mm_all_database_objects):
-    return mm_all_database_objects['emissions'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'emissions', request.param
+    )
 
 
 @pytest.fixture(scope='function', name="run")
 def fixture_run(request, mm_all_database_objects):
-    return mm_all_database_objects['runs'][request.param]
+    return get_database_object(mm_all_database_objects, 'runs', request.param)
 
 
 @pytest.fixture(scope='function', name="data_file")
 def fixture_data_file(request, mm_all_database_objects):
-    return mm_all_database_objects['data_files'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'data_files', request.param
+    )
 
 
 @pytest.fixture(scope='function', name="variable_alias")
 def fixture_variable_alias(request, mm_all_database_objects):
-    return mm_all_database_objects['variable_aliases'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'variable_aliases', request.param
+    )
 
 
 @pytest.fixture(scope='function', name="ensemble")
 def fixture_ensemble(request, mm_all_database_objects):
-    return mm_all_database_objects['ensembles'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'ensembles', request.param
+    )
 
 
 @pytest.fixture(scope='function', name="ensemble_dfv")
 def fixture_ensemble_dfv(request, mm_all_database_objects):
-    return mm_all_database_objects['ensemble_dfvs'][request.param]
+    return get_database_object(
+        mm_all_database_objects, 'ensemble_dfvs', request.param
+    )
 
 
 # Database sessions
