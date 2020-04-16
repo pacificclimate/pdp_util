@@ -1,7 +1,6 @@
 import pytest
 
 
-# TODO: enable None case
 @pytest.mark.parametrize('ensemble, status, content_type', [
     (0, '200 OK', 'application/json'),
     (1, '200 OK', 'application/json'),

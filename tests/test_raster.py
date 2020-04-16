@@ -81,7 +81,7 @@ def test_ensemble_catalog(
 # Valid request= types, variety of id, var cases.
 @pytest.mark.parametrize('req, keys', [
     ('GetMinMax', {'min', 'max'}),
-    # ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
+    ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
 ])
 @pytest.mark.parametrize('id_, var, status, content_type', [
     ('unique_id_0', 'var_0', '200 OK', 'application/json'),

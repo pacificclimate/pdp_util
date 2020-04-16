@@ -244,10 +244,7 @@ def mm_all_database_objects():
     An ordered dict because order of insertion (and deletion) in database 
     matters.
 
-    Newly created objects because attempting delete and then re-insert the same
-    SQLAlchemy object causes an error. And regrettably these objects, when
-    made transient as advised by SQLAlchemy, lose all their attribute values.
-    So new objects it is.
+    Newly created objects because ... see Note 2 above.
     """
     models = make(make_model, 2)
     emissions = make(make_emission, 2)
@@ -383,14 +380,9 @@ def mm_test_session(mm_empty_session, mm_test_session_objects):
 # TODO: Consider substituting delete actions for rollback everywhere
 @pytest.fixture(scope="function")
 def mm_test_session_committed(mm_test_session, mm_test_session_objects):
-    # Contents of an uncommitted session can only be seen by that session;
-    # i.e., a session is implicitly in a transaction. This is good.
-    # Some components of pdp_util, e.g., EnsembleCatalog, creates an
-    # independent engine and session to access the database, so we must commit
-    # our session contents.
-    # However, committing a session leaves gunk in the database that can
-    # mess up the database setup for other tests. Hence we have to clean up
-    # after ourselves. And commit that cleanup.
+    """Fully committed test database. For an explanation of why, see
+    Note 1 above.
+    """
 
     s = mm_test_session
     s.commit()
