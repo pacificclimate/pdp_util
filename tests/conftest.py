@@ -198,7 +198,7 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
 
 def make_ensemble(i, data_file_variables):
     return Ensemble(
-        changes='wonder what this is for',
+        changes='changes',
         description='Ensemble {}'.format(i),
         name='ensemble_{}'.format(i),
         version=float(i),
@@ -206,12 +206,12 @@ def make_ensemble(i, data_file_variables):
     )
 
 
-# Database objects
-
 def make(maker, arg_list, auto_ids=True):
     """Make a list of database objects using the given maker and args.
+    In essence, this function maps `maker` over `arg_list`, spreading the
+    tuples in `arg_list` as args for `maker`.
     Some arg munging for the convenience of the user:
-    - an "arg_list" equal to an integer means no args, but that many items
+    - an "arg_list" equal to an integer means no args for `maker`, but that many items
     - for an arg_list that is a list, non-tuple items are converted to tuples
     """
 
@@ -226,140 +226,96 @@ def make(maker, arg_list, auto_ids=True):
         return [maker(*tuplify(args)) for args in arg_list]
 
 
-def objects_subset(object_dict, subset):
-    return OrderedDict(
-        (key, object_dict[key][slice_])
-        for key, slice_ in subset.items()
-    )
+# Fixtures that create and wire up database objects
+# These are all objects that could be inserted into a database, with
+# all the appropriate relationships established between them.
+
+@pytest.fixture(scope='function')
+def models():
+    return make(make_model, 2)
 
 
-@pytest.fixture(scope="function")
-def mm_all_database_objects():
-    """Return an *ordered dict* full of *newly created* database objects.
-    This is the set of all possible objects that database test sessions
-    might contain. Typically, they contain a subset.
+@pytest.fixture(scope='function')
+def emissions():
+    return make(make_emission, 2)
 
-    A dict because individual object-type fixtures need to select for type.
 
-    An ordered dict because order of insertion (and deletion) in database 
-    matters.
-
-    Newly created objects because ... see Note 2 above.
-    """
-    models = make(make_model, 2)
-    emissions = make(make_emission, 2)
-    runs = make(make_run, [
+@pytest.fixture(scope='function')
+def runs(models, emissions):
+    return make(make_run, [
         (models[0], emissions[0]),
         (models[0], emissions[1]),
     ])
-    data_files = make(make_data_file, [runs[0], runs[1], runs[0]])
-    variable_aliases = make(make_variable_alias, 2)
-    dfv_dsg_tss = make(make_dfv_dsg_time_series, [
+
+
+@pytest.fixture(scope='function')
+def data_files(runs):
+    return make(make_data_file, [runs[0], runs[1], runs[0]])
+
+
+@pytest.fixture(scope='function')
+def variable_aliases():
+    return make(make_variable_alias, 2)
+
+
+@pytest.fixture(scope='function')
+def dfv_dsg_tss(data_files, variable_aliases):
+    return make(make_dfv_dsg_time_series, [
         (data_files[0], variable_aliases[0]),   # var 0, uid 0
         (data_files[0], variable_aliases[1]),   # var 1, uid 0
         (data_files[1], variable_aliases[1]),   # var 2, uid 1
         (data_files[2], variable_aliases[1]),   # var 3, uid 2
     ])
-    ensembles = make(make_ensemble, [
+
+
+@pytest.fixture(scope='function')
+def ensembles(dfv_dsg_tss):
+    return make(make_ensemble, [
         [dfv_dsg_tss[0], dfv_dsg_tss[2]],
         [dfv_dsg_tss[2], dfv_dsg_tss[3]],
         [],
     ])
-    # TODO: This doesn't have to be an ordered dict any more
-    return OrderedDict([
-        ('models', models),
-        ('emissions', emissions),
-        ('runs', runs),
-        ('data_files', data_files),
-        ('variable_aliases', variable_aliases),
-        ('dfv_dsg_tss', dfv_dsg_tss),
-        ('ensembles', ensembles),
-    ])
+
+
+# Convenience fixtures that retrieve objects from database construction
+# fixtures. These fixtures must be called indirectly, and the parameter they
+# take is the index of the object in the list returned by the corresponding
+# construction fixture; e.g., `ensemble` indexes `ensembles`.
+#
+# We could do one for each type of object (model, run, etc.), but it turns out
+# we only need ensemble. Easy to add other fixtures at need, two lines each.
+
+def get_from(array, index):
+    return None if index is None else array[index]
 
 
 @pytest.fixture(scope='function')
-def mm_test_session_objects(mm_all_database_objects):
+def ensemble(ensembles, request):
+    return get_from(ensembles, request.param)
+
+
+@pytest.fixture(scope='function')
+def mm_test_session_objects(
+    models,
+    emissions,
+    runs,
+    data_files,
+    variable_aliases,
+    dfv_dsg_tss,
+    ensembles,
+):
     """Return a subset of all database objects to be inserted into
     the test session(s).
     """
-    all_ = slice(None, None, None)
-    return objects_subset(
-        mm_all_database_objects,
-        # Order counts here
-        OrderedDict([
-            ('models', all_),
-            ('emissions', all_),
-            ('runs', all_),
-            ('data_files', all_),
-            ('variable_aliases', all_),
-            ('dfv_dsg_tss', all_),
-            # Leave out 3rd ensemble so that we have a not-found one
-            ('ensembles', slice(2)),
-        ])
-    )
-
-
-# Fixtures returning database objects.
-
-def get_database_object(objects, obj_type, obj_index):
-    if obj_type is None or obj_index is None:
-        return None
-    return objects[obj_type][obj_index]
-
-
-@pytest.fixture(scope='function')
-def database_object(request, mm_all_database_objects):
-    return get_database_object(mm_all_database_objects, *request.param)
-
-
-# It would be nice (and apparently simple) to reduce the repetition here,
-# but calling @pytest.fixture in a loop doesn't work -- it replaces the
-# previous fixture(s) rather than creating several of them. Rats.
-
-@pytest.fixture(scope='function', name="model")
-def fixture_model(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'models', request.param
-    )
-
-
-@pytest.fixture(scope='function', name="emission")
-def fixture_emission(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'emissions', request.param
-    )
-
-
-@pytest.fixture(scope='function', name="run")
-def fixture_run(request, mm_all_database_objects):
-    return get_database_object(mm_all_database_objects, 'runs', request.param)
-
-
-@pytest.fixture(scope='function', name="data_file")
-def fixture_data_file(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'data_files', request.param
-    )
-
-
-@pytest.fixture(scope='function', name="variable_alias")
-def fixture_variable_alias(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'variable_aliases', request.param
-    )
-
-
-@pytest.fixture(scope='function', name="ensemble")
-def fixture_ensemble(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'ensembles', request.param
-    )
-
-
-@pytest.fixture(scope='function', name="ensemble_dfv")
-def fixture_ensemble_dfv(request, mm_all_database_objects):
-    return get_database_object(
-        mm_all_database_objects, 'ensemble_dfvs', request.param
+    return (
+        models +
+        emissions +
+        runs +
+        data_files +
+        variable_aliases +
+        dfv_dsg_tss +
+        # Leave out 3rd ensemble so that we have a not-found one
+        ensembles[:2]
     )
 
 
@@ -368,12 +324,11 @@ def fixture_ensemble_dfv(request, mm_all_database_objects):
 @pytest.fixture(scope="function")
 def mm_test_session(mm_empty_session, mm_test_session_objects):
     """Session with test objects added. These additions are rolled back
-    by mm_empty_session.
+    by mm_empty_session (or deleted by mm_test_session_committed).
     """
     s = mm_empty_session
-    for name, objects in mm_test_session_objects.items():
-        s.add_all(objects)
-        s.flush()
+    s.add_all(mm_test_session_objects)
+    s.flush()
     yield s
 
 
@@ -383,14 +338,12 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
     """Fully committed test database. For an explanation of why, see
     Note 1 above.
     """
-
     s = mm_test_session
     s.commit()
     yield s
-    for name, objects in reversed(mm_test_session_objects.items()):
-        for obj in reversed(objects):
-            s.delete(obj)
-            s.flush()
+    for obj in reversed(mm_test_session_objects):
+        s.delete(obj)
+        s.flush()
     s.commit()
 
 
