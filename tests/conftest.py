@@ -131,7 +131,7 @@ def mm_empty_session(mm_engine, mm_schema_name):
     All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
     session.execute(
-        'SET search_path TO test_meta, public'.format(mm_schema_name)
+        'SET search_path TO {}, public'.format(mm_schema_name)
     )
     yield session
     session.rollback()
