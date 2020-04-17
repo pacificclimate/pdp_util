@@ -40,7 +40,7 @@ setup(
                       # raster portal stuff
                       'pydap_pdp >=3.2.1',
                       'pydap.handlers.pcic >=0.0.3',
-                      'modelmeta >=0.0.5',
+                      'modelmeta >=0.3.0',
                       'PyYAML'
                       ],
     tests_require=['pytest',
