@@ -1,4 +1,4 @@
-@Library('pcic-pipeline-library@python-test-suite-fixes')_
+@Library('pcic-pipeline-library')_
 
 
 node {
