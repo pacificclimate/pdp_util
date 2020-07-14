@@ -20,12 +20,14 @@ def test_can_instantiate(test_session, conn_params):
 def test_metadata_index_responder(test_session):
     response_iter = metadata_index_responder(test_session, 'FLNRO-WMB', False)
     response_text = ''.join([line for line in response_iter])
-    assert response_text.startswith('variables\nvariable, standard_name, cell_method, unit\n')
-    lines = ['precipitation, lwe_thickness_of_precipitation_amount, time: sum, mm',
-             'temperature, air_temperature, time: point, celsius',
-             'relative_humidity, relative_humidity, time: mean, %',
-             'wind_speed, wind_speed, time: mean, m s-1',
-             'wind_direction, wind_from_direction, time: mean, degree']
+
+    lines = [
+             'variables.variable, variables.standard_name, variables.cell_method, variables.unit',
+             '"precipitation", "lwe_thickness_of_precipitation_amount", "time: sum", "mm"',
+             '"temperature", "air_temperature", "time: point", "celsius"',
+             '"relative_humidity", "relative_humidity", "time: mean", "%"',
+             '"wind_speed", "wind_speed", "time: mean", "m s-1"',
+             '"wind_direction", "wind_from_direction", "time: mean", "degree"']
     for line in lines:
         assert line in response_text
 
@@ -37,11 +39,11 @@ def test_get_all_metadata_index_responders(test_session, monkeypatch):
     monkeypatch.setattr(pdp_util.agg, 'metadata_index_responder', fake_metadata_index_responder)
 
     expected_filenames = set(['ARDA/variables.csv', 'EC_raw/variables.csv', 'FLNRO-WMB/variables.csv'])
-    
+
     resp = get_all_metadata_index_responders(test_session, stns, False)
     filenames = set([filename for filename, content in resp])
     assert filenames == expected_filenames
-    
+
 def test_get_pcds_responders(conn_params, monkeypatch):
     # Don't care about content (tested elsewhere); just return the environ
     monkeypatch.setattr(pydap.handlers.pcic.PcicSqlHandler, '__call__', lambda x, y, z: y)
@@ -73,7 +75,7 @@ def test_ziperator():
     # Check that we actually got an iterator
     assert hasattr(result, 'next')
     assert hasattr(result, '__iter__')
-   
+
     with NamedTemporaryFile('w', delete=False) as f:
         for line in result:
             f.write(line)
@@ -87,5 +89,5 @@ def test_ziperator():
                 # Check the content of each archive member
                 with z.open(filename) as x:
                     assert x.read() == ''.join(content)
-            
+
         os.remove(f.name)
