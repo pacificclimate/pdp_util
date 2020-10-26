@@ -3,7 +3,7 @@ Genshi==0.7.1
 Paste==3.0.6
 Pillow==5.4.1
 PyCDS==2.2.1
-PyYAML==3.13
+PyYAML==5.1
 WebOb==1.8.5
 modelmeta==0.3.0
 numpy==1.16.0
