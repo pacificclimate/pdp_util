@@ -129,6 +129,7 @@ def test_raster_metadata_minmax(
 @pytest.mark.parametrize('req, include', [
     ('invalid', None),
     (None, 'invalid'),
+    (None, 'units,invalid'),
     ('invalid', 'invalid'),
 ])
 @pytest.mark.usefixtures('mm_test_session_committed')
@@ -139,6 +140,6 @@ def test_raster_metadata_minmax_bad_params(
         ('request', req),
         ('include', include),
         ('id', 'unique_id_1'),
-        ('var', 'var_1')
+        ('var', 'var_2')
     )
     test_wsgi_app(raster_metadata, url, '400 Bad Request', None)
