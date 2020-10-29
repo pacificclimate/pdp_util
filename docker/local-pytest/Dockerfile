@@ -25,8 +25,8 @@ RUN apt-get install -yq \
             python-pip \
             postgresql-plpython-9.5 \
             postgresql-9.5-postgis-2.4 \
-    && echo "done"
-RUN pip install -U pip pytest
+            && \
+    pip install -U pip pytest
 
 # You must mount local codebase to this directory
 WORKDIR /codebase
