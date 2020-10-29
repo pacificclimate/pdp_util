@@ -1,6 +1,6 @@
 # Install PyCDS
-pip3 install -r requirements.txt -r test_requirements.txt
-pip3 install -e .
+pip install -i https://pypi.pacificclimate.org/simple -r requirements.txt -r test_requirements.txt
+pip install -e .
 
 # Use a non-root user so that Postgres doesn't object
 # Important: See README for reason user id 1000 is set here.
