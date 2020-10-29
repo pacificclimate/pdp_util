@@ -3,7 +3,7 @@
 ## What
 
 The files in this directory allow you to build and run a test environment
-for PyCDS equivalent to that in the GitHub Actions CI. Within this environment
+for `pdp_util` equivalent to that in the GitHub Actions CI. Within this environment
 you can run part or all of the test suite, or do other dev/debug activities.
 
 ## Why
@@ -21,10 +21,10 @@ run our tests from inside there, and wow zippy. Debugging now feasible.
 
 ## How
 
-1. The image is built with all the contents necessary to install and run PyCDS
+1. The image is built with all the contents necessary to install and run `pdp_util`
 and its tests. 
 
-1. But since we want to run our own, local test code, we can't install PyCDS 
+1. But since we want to run our own, local test code, we can't install `pdp_util` 
 from a repo. Instead we install from our local codebase when the container is 
 started.
 
@@ -35,7 +35,7 @@ called `/codebase`.
 (See Run image).
 
 1. When the container starts (image runs), the script 
-`entrypoint.sh` installs the local version of PyCDS (in development mode `-e`). 
+`entrypoint.sh` installs the local version of `pdp_util` (in development mode `-e`). 
 It also sets up 
 and `su`s a non-root user, `test`, because PostgreSQL refuses -- sensibly --
 to run as the root user, which is what we are up to this point.
