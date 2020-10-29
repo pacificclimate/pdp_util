@@ -78,10 +78,18 @@ def test_ensemble_catalog(
     }
 
 
-# Valid request= types, variety of id, var cases.
-@pytest.mark.parametrize('req, keys', [
+# Valid request parameters with a variety of id, var cases.
+@pytest.mark.parametrize('req, req_keys', [
+    (None, {'min', 'max'}),
     ('GetMinMax', {'min', 'max'}),
     ('GetMinMaxWithUnits', {'min', 'max', 'units'}),
+])
+@pytest.mark.parametrize('include, inc_keys', [
+    (None, {'min', 'max'}),
+    ('units', {'min', 'max', 'units'}),
+    ('filepath', {'min', 'max', 'filepath'}),
+    ('filepath,units', {'min', 'max', 'filepath', 'units'}),
+    ('units,filepath', {'min', 'max', 'filepath', 'units'}),
 ])
 @pytest.mark.parametrize('id_, var, status, content_type', [
     ('unique_id_0', 'var_0', '200 OK', 'application/json'),
@@ -100,22 +108,36 @@ def test_raster_metadata_minmax(
     raster_metadata,
     test_wsgi_app,
     query_params,
-    req, keys,
+    req, req_keys,
+    include, inc_keys,
     id_, var, status, content_type,
 ):
-    url = query_params(('request', req), ('id', id_), ('var', var))
+    url = query_params(
+        ('request', req),
+        ('include', include),
+        ('id', id_),
+        ('var', var),
+    )
     resp, body = test_wsgi_app(raster_metadata, url, status, content_type)
+    keys = req_keys | inc_keys
     if status[:3] == '200':
         assert set(body.keys()) == keys
 
 
-# One final test that doesn't fit the parametrization pattern above.
+# Tests that don't fit the parametrization pattern above.
+
+@pytest.mark.parametrize('req, include', [
+    ('invalid', None),
+    (None, 'invalid'),
+    ('invalid', 'invalid'),
+])
 @pytest.mark.usefixtures('mm_test_session_committed')
-def test_raster_metadata_minmax_no_id(
-    raster_metadata, test_wsgi_app, query_params
+def test_raster_metadata_minmax_bad_params(
+    raster_metadata, test_wsgi_app, query_params, req, include
 ):
     url = query_params(
-        ('request', 'INVALID_REQUEST_TYPE'),
+        ('request', req),
+        ('include', include),
         ('id', 'unique_id_1'),
         ('var', 'var_1')
     )
