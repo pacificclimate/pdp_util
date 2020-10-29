@@ -148,7 +148,7 @@ class RasterMetadata(object):
             include_items = req.params["include"].split(',')
             if not (include_items <= {"filepath", "units"}):
                 start_response('400 Bad Request', [])
-                return ["Invalid values for 'include' parameter"]
+                return ["Invalid value(s) in 'include' parameter"]
             content_items |= set(include_items)
         except KeyError:
             pass
@@ -156,6 +156,9 @@ class RasterMetadata(object):
         # Content specified by 'request' query param
         try:
             request_qp = req.params["request"]
+            if request_qp not in {"GetMinMax", "GetMinMaxWithUnits"}:
+                start_response('400 Bad Request', [])
+                return ["Invalid value for 'request' parameter"]
             if request_qp == "GetMinMaxWithUnits":
                 content_items |= {"units"}
         except KeyError:
