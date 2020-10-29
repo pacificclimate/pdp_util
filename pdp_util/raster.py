@@ -145,11 +145,11 @@ class RasterMetadata(object):
 
         # Content specified by 'include' query param
         try:
-            include_items = req.params["include"].split(',')
+            include_items = set(req.params["include"].split(','))
             if not (include_items <= {"filepath", "units"}):
                 start_response('400 Bad Request', [])
                 return ["Invalid value(s) in 'include' parameter"]
-            content_items |= set(include_items)
+            content_items |= include_items
         except KeyError:
             pass
 
