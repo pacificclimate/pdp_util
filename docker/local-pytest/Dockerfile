@@ -32,4 +32,4 @@ RUN pip install -U pip pytest
 WORKDIR /codebase
 
 # Install the local codebase when the container starts.
-ENTRYPOINT ./docker/local-test/entrypoint.sh
+ENTRYPOINT ./docker/local-pytest/entrypoint.sh
