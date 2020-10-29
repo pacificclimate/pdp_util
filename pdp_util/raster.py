@@ -1,6 +1,7 @@
 import os
 from os.path import basename
 
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
 from modelmeta import DataFile, DataFileVariableDSGTimeSeries, EnsembleDataFileVariables, Ensemble, VariableAlias
@@ -120,115 +121,95 @@ class RasterMetadata(object):
         self.session_scope_factory = session_scope_factory
 
     def __call__(self, environ, start_response):
+        """Handle requests for metadata"""
+
         req = Request(environ)
+
+        # Get and validate required parameters
         try:
-            request_type = req.params['request']
+            unique_id = req.params['id']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'id' not specified"]
+
+        try:
+            var = req.params['var']
+        except:
+            start_response('400 Bad Request', [])
+            return ["Required parameter 'var' not specified"]
+
+        # Establish content of response
+
+        # Default content
+        content_items = {"min", "max"}
+
+        # Content specified by 'include' query param
+        try:
+            include_items = set(req.params["include"].split(','))
+            if not (include_items <= {"filepath", "units"}):
+                start_response('400 Bad Request', [])
+                return ["Invalid value(s) in 'include' parameter"]
+            content_items |= include_items
         except KeyError:
-            start_response('400 Bad Request', [])
-            return ["Required parameter 'request' not specified"]
+            pass
 
-        if request_type == 'GetMinMax':
-            return self.getMinMax(environ, start_response, req)
-        elif request_type == 'GetMinMaxWithUnits':
-            return self.getMinMaxWithUnits(environ, start_response, req)
-
-        start_response('400 Bad Request', [])
-        return ["Request type not valid"]
-
-    def getMinMax(self, environ, start_response, req):
-        '''
-        Fuction to handle min/max requests to the MDDB.
-
-        Requires `id` and `var` as url parameters and returns a json object
-        with min/max keys.
-        Returns 400 if `id` or `var` not specified,
-        or 404 if id/var combo not found in the MDDB
-
-        :param req: Request object containing parsed url parameters
-        :type req: webob.request.Request
-        '''
+        # Content specified by 'request' query param
         try:
-            unique_id = req.params['id']
-        except:
-            start_response('400 Bad Request', [])
-            return ["Required parameter 'id' not specified"]
+            request_qp = req.params["request"]
+            if request_qp not in {"GetMinMax", "GetMinMaxWithUnits"}:
+                start_response('400 Bad Request', [])
+                return ["Invalid value for 'request' parameter"]
+            if request_qp == "GetMinMaxWithUnits":
+                content_items |= {"units"}
+        except KeyError:
+            pass
 
-        try:
-            var = req.params['var']
-        except:
-            start_response('400 Bad Request', [])
-            return ["Required parameter 'var' not specified"]
+        # Build query according to content of response
+
+        # Default content
+        columns = (
+            DataFileVariableDSGTimeSeries.range_min.label("min"),
+            DataFileVariableDSGTimeSeries.range_max.label("max"),
+        )
+        joins = (DataFile,)
+
+        # 'filepath' content
+        if "filepath" in content_items:
+            columns += (DataFile.filename.label("filepath"),)
+
+        # 'units' content
+        if "units" in content_items:
+            columns += (VariableAlias.units.label("units"),)
+            joins += (VariableAlias,)
 
         with self.session_scope_factory() as sesh:
-            r = sesh.query(DataFileVariableDSGTimeSeries.range_min, DataFileVariableDSGTimeSeries.range_max)\
-                .join(DataFile)\
-                .filter(DataFile.unique_id == unique_id)\
+            q = (
+                sesh.query(*columns)
+                .filter(DataFile.unique_id == unique_id)
                 .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
-
-        if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
-            return response_404(
-                start_response,
-                "Unable to find requested id/var combo"
             )
+            for Table in joins:
+                q = q.join(Table)
 
-        if r.count() > 1: # Result has multiple rows, panic
-            return response_404(
-                start_response,
-                "Multiple matching id/var combos. This should not happen."
-            )
-
-        mn, mx = r.first()
-        d = {'min': mn, 'max': mx }
-
-        return response_200(start_response, d)
-
-    def getMinMaxWithUnits(self, environ, start_response, req):
-        '''
-        Fuction to handle min/max requests to the MDDB.
-
-        Requires `id` and `var` as url parameters and returns a json object
-        with min/max keys.
-        Returns 400 if `id` or `var` not specified,
-        or 404 if id/var combo not found in the MDDB
-
-        :param req: Request object containing parsed url parameters
-        :type req: webob.request.Request
-        '''
+        # Execute query
         try:
-            unique_id = req.params['id']
-        except:
-            start_response('400 Bad Request', [])
-            return ["Required parameter 'id' not specified"]
-
-        try:
-            var = req.params['var']
-        except:
-            start_response('400 Bad Request', [])
-            return ["Required parameter 'var' not specified"]
-
-        with self.session_scope_factory() as sesh:
-            r = sesh.query(DataFileVariableDSGTimeSeries.range_min, DataFileVariableDSGTimeSeries.range_max, VariableAlias.units)\
-                .join(DataFile)\
-                .join(VariableAlias)\
-                .filter(DataFile.unique_id == unique_id)\
-                .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
-
-        if r.count() == 0: # Result does not contain any row therefore id/var combo does not exist
+            result = q.one()
+        except NoResultFound:
             return response_404(
                 start_response,
-                "Unable to find requested id/var combo"
+                "Unable to find specified combination of id and var"
             )
-
-        if r.count() > 1: # Result has multiple rows, panic
+        except MultipleResultsFound:
             return response_404(
                 start_response,
-                "Multiple matching id/var combos. This should not happen."
+                "Multiple matches to specified id and var combination. "
+                "This should not happen."
             )
 
-        mn, mx, units = r.first()
-        d = {'min': mn, 'max': mx , 'units': units}
+        # Build and return response
+        content = {key: getattr(result, key) for key in content_items}
+        return response_200(start_response, content)
 
-        return response_200(start_response, d)
 
 def db_raster_catalog(session, ensemble, root_url):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.

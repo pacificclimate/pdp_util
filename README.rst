@@ -33,6 +33,17 @@ Globally applicable utilities
 * The `auth` module contains WSGI middleware for providing authentication via OpenID.
 * The `dbdict` module contains a function to convert dict object into a database DSN.
 
+Testing
+-------
+
+Our production database environment (PostgreSQL 9.1) is far out of date and it is hard to establish a
+local installation suitable for running tests. But it is reasonably easy to build Docker images containing
+the desired environment for testing. This is done in two ways:
+
+* In the python-ci GitHub action, which performs automated testing on every push.
+* In the Docker image `pcic/pdp_util-local-pytest`, which can be run locally in interactive mode to provide
+  a persistent environment for running tests. For details, its [README](docker/local-pytest/README.md).
+
 
 .. rubric:: Footnotes
 
