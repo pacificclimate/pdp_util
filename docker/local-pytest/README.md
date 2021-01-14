@@ -110,7 +110,7 @@ you should not need to do this. However, just in case:
 From the _project root directory_ (important Docker context location):
 
 ```
-docker build -t pcic/pdp_util-local-pytest -f docker/local-test/Dockerfile .
+docker build -t pcic/pdp_util-local-pytest -f docker/local-pytest/Dockerfile .
 ```
 
 If you are having trouble installing packages that should be there, try using
