@@ -91,10 +91,10 @@ def get_all_metadata_index_responders(sesh, stations, climo=False):
     :type climo: bool
     :rtype: iterator
     '''
-    nets = set(zip(*stations)[0])
-    for net in nets:
-        filename = '{0}/variables.csv'.format(net)
-        yield (filename, metadata_index_responder(sesh, net, climo))
+    for station in stations:
+        network_name = station[0]
+        filename = '{0}/variables.csv'.format(network_name)
+        yield (filename, metadata_index_responder(sesh, network_name, climo))
 
 def metadata_index_responder(sesh, network, climo=False):
     '''The function creates a pydap csv response which lists variable metadata out of the database. It returns an generator for the contents of the file
