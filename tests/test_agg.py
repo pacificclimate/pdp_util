@@ -31,18 +31,36 @@ def test_metadata_index_responder(test_session):
     for line in lines:
         assert line in response_text
 
-# This seems dumb to test, but it's cheap
-def test_get_all_metadata_index_responders(test_session, monkeypatch):
+
+@pytest.mark.parametrize(
+    "stations, expected_filenames",
+    [
+        ([], set()),
+        (
+            stns,
+            set([
+                'ARDA/variables.csv',
+                'EC_raw/variables.csv',
+                'FLNRO-WMB/variables.csv'
+            ])
+        ),
+    ]
+)
+def test_get_all_metadata_index_responders(
+    test_session,
+    monkeypatch,
+    stations,
+    expected_filenames,
+):
     # Content is tested elsewhere. Fake it out.
     def fake_metadata_index_responder(sesh, net, climo):
         return []
     monkeypatch.setattr(pdp_util.agg, 'metadata_index_responder', fake_metadata_index_responder)
 
-    expected_filenames = set(['ARDA/variables.csv', 'EC_raw/variables.csv', 'FLNRO-WMB/variables.csv'])
-
-    resp = get_all_metadata_index_responders(test_session, stns, False)
+    resp = get_all_metadata_index_responders(test_session, stations, False)
     filenames = set([filename for filename, content in resp])
     assert filenames == expected_filenames
+
 
 def test_get_pcds_responders(conn_params, monkeypatch):
     # Don't care about content (tested elsewhere); just return the environ
