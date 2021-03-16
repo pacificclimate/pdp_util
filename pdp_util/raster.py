@@ -1,6 +1,7 @@
 import os
 from os.path import basename
 
+from tempfile import NamedTemporaryFile
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
@@ -15,6 +16,9 @@ from modelmeta import (
 from simplejson import dumps
 from webob.request import Request
 from webob.response import Response
+import requests
+import urllib
+from xarray import open_dataset
 
 pwd = os.getcwd()
 config = {
@@ -53,16 +57,14 @@ def response_404(start_response, details):
     return dumps({"code": 404, "message": "Not Found", "details": details})
 
 
-class RasterServer(DapServer):
-    """WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters"""
-
+class RasterServer(object):
+    '''WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters'''
     def __init__(self, dsn, config=config):
         """Initialize the application
 
-        :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
-        :type config: dict
+           :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
+           :type config: dict
         """
-        DapServer.__init__(self, None)
         self._config = config
         self.dsn = dsn
 
@@ -71,14 +73,8 @@ class RasterServer(DapServer):
         return self._config
 
     def __call__(self, environ, start_response):
-<<<<<<< HEAD
-        """An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests"""
-=======
         '''An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests'''
-        print(environ)
-        print(start_response)
 
->>>>>>> 96d43ba... Initial testing
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
@@ -93,7 +89,10 @@ class RasterServer(DapServer):
             )
             return res(environ, start_response)
         else:
-            return super(RasterServer, self).__call__(environ, start_response)
+            with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
+                urllib.urlretrieve("http://docker-dev03.pcic.uvic.ca:30333/data/tasmax_day_BCCAQv2_CanESM2_historical-rcp85_r1i1p1_19500101-21001231_Canada/tasmax[0:150][0:91][0:206]", tmp_file.name)
+                return open_dataset(tmp_file.name)
+
 
 
 class RasterCatalog(RasterServer):
