@@ -71,7 +71,14 @@ class RasterServer(DapServer):
         return self._config
 
     def __call__(self, environ, start_response):
+<<<<<<< HEAD
         """An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests"""
+=======
+        '''An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests'''
+        print(environ)
+        print(start_response)
+
+>>>>>>> 96d43ba... Initial testing
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
