@@ -57,7 +57,8 @@ config = {
         },
     ],
     'ensemble' : 'bccaq2',
-    'root_url' : 'root'
+    'root_url' : 'root',
+    'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333'
 }
 
 environ = dict(os.environ.items())
@@ -70,8 +71,7 @@ def setup_environ():
     environ['wsgi.multiprocess'] = False
     environ['wsgi.run_once'] = True
     environ['wsgi.url_scheme'] = 'http'
-    environ['PATH_INFO'] = '/data' # what we have in query string may actually belong appended to here
-    environ['QUERY_STRING'] = 'tasmax_day_BCCAQv2_CanESM2_historical-rcp85_r1i1p1_19500101-21001231_Canada/tasmax[0:150][0:91][0:206]'
+    environ['PATH_INFO'] = '/data/tasmax_day_BCCAQv2_CanESM2_historical-rcp85_r1i1p1_19500101-21001231_Canada/tasmax[0:150][0:91][0:206]'
     environ['REQUEST_METHOD'] = 'GET'
 
 def test_RasterServer(mm_database_dsn):
