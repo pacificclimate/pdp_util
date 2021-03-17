@@ -88,9 +88,12 @@ class RasterServer(object):
                 charset="utf-8",
             )
             return res(environ, start_response)
+
         else:
+            data_url = "http://docker-dev03.pcic.uvic.ca:30333" + req.path_info + '/' + req.query_string
+            print(data_url)
             with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-                urllib.urlretrieve("http://docker-dev03.pcic.uvic.ca:30333/data/tasmax_day_BCCAQv2_CanESM2_historical-rcp85_r1i1p1_19500101-21001231_Canada/tasmax[0:150][0:91][0:206]", tmp_file.name)
+                urllib.urlretrieve(data_url, tmp_file.name)
                 return open_dataset(tmp_file.name)
 
 
