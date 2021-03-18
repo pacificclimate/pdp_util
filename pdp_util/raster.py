@@ -90,7 +90,7 @@ class RasterServer(object):
             return res(environ, start_response)
 
         else:
-            data_url = self.config['thredds_root'] + req.path_info
+            data_url = self.config['thredds_root'] + req.path_info + req.query_string
             print(data_url)
             with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
                 urllib.urlretrieve(data_url, tmp_file.name)
