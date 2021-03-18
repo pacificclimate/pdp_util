@@ -90,11 +90,8 @@ class RasterServer(object):
             return res(environ, start_response)
 
         else:
-            data_url = self.config['thredds_root'] + req.path_info + req.query_string
-            print(data_url)
-            with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-                urllib.urlretrieve(data_url, tmp_file.name)
-                return open_dataset(tmp_file.name)
+            orca_url = build_orca_url(self.config['handlers'], self.config['thredds_root'], req)
+            return Response(status_code=301, location=orca_url)
 
 
 
@@ -241,6 +238,15 @@ class RasterMetadata(object):
         content = {key: getattr(result, key) for key in content_items}
         return response_200(start_response, content)
 
+
+def build_orca_url(handlers, thredds_root, req):
+    filename = None
+    for handler in handlers:
+        if handler['url'] == req.path_info[:-3]:
+            filename = handler['file'].replace('.nc', '')
+            break
+
+    return thredds_root + '/' + filename + '/' + req.query_string[:-1]
 
 def db_raster_catalog(session, ensemble, root_url):
     """A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
