@@ -16,9 +16,6 @@ from modelmeta import (
 from simplejson import dumps
 from webob.request import Request
 from webob.response import Response
-import requests
-import urllib
-from xarray import open_dataset
 
 pwd = os.getcwd()
 config = {
