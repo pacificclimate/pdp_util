@@ -55,7 +55,7 @@ def response_404(start_response, details):
 
 
 class RasterServer(object):
-    '''WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters'''
+    '''Does dynamic (non-filebased) configuration, for serving rasters'''
     def __init__(self, dsn, config=config):
         """Initialize the application
 
@@ -70,7 +70,8 @@ class RasterServer(object):
         return self._config
 
     def __call__(self, environ, start_response):
-        '''An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests'''
+        '''Makes catalog requests, but defers to OPeNDAP Request
+        Compiler Application (ORCA) for data requests'''
 
         req = Request(environ)
 
@@ -240,7 +241,7 @@ def build_orca_url(handlers, thredds_root, req):
     filename = None
     for handler in handlers:
         if handler['url'] == req.path_info[:-3]:
-            filename = handler['file'].replace('.nc', '')
+            filename = handler['file']
             break
 
     return thredds_root + '/' + filename + '/' + req.query_string[:-1]

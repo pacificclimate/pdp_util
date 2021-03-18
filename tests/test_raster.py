@@ -1,12 +1,12 @@
+import pytest
+import urllib
 from os.path import basename
 from pdp_util.raster import (
-    ensemble_files,
-    db_raster_catalog,
-    db_raster_configurator,
-    EnsembleCatalog,
+    ensemble_files, db_raster_catalog, db_raster_configurator, EnsembleCatalog, RasterServer
 )
-
-import pytest
+from tempfile import NamedTemporaryFile
+from webob.response import Response
+from netCDF4 import Dataset
 
 
 @pytest.mark.parametrize("ensemble", [0, 1], indirect=["ensemble"])
@@ -164,4 +164,48 @@ def test_raster_metadata_minmax_bad_params(
     url = query_params(
         ("request", req), ("include", include), ("id", "unique_id_1"), ("var", "var_2")
     )
-    test_wsgi_app(raster_metadata, url, "400 Bad Request", None)
+    test_wsgi_app(raster_metadata, url, '400 Bad Request', None)
+
+
+@pytest.mark.online
+@pytest.mark.parametrize(
+    ("config", "environ"),
+    [
+        (
+            {
+                'root_url': 'http://tools.pacificclimate.org/dataportal/data/vic_gen1/',
+                'name': 'testing-server',
+                'version': 0,
+                'api_version': 0,
+                'handlers': [
+                    {
+                        'url': 'pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc',
+                        'file': '/storage/data/climate/downscale/CMIP5/BCSD/pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc'
+                    },
+                    {
+                        'url': 'pr+tasmin+tasmax+wind_day_CGCM3_A1B_run1_19500101-21001231.nc',
+                        'file': '/storage/data/projects/dataportal/data/vic_gen1_input/pr+tasmin+tasmax+wind_day_CGCM3_A1B_run1_19500101-21001231.nc'
+                    },
+                ],
+                'ensemble' : 'bccaq2',
+                'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333'
+            },
+            {
+                'PATH_INFO' : 'pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.nc',
+                'QUERY_STRING' : 'tasmax[0:150][0:91][0:206]&',
+}
+        )
+    ]
+)
+def test_RasterServer_orca(mm_database_dsn, config, environ):
+    r_server = RasterServer(mm_database_dsn, config)
+    resp = r_server(environ, Response())
+
+    print(resp.location)
+
+    assert resp.status_code == 301
+    assert config['thredds_root'] in resp.location
+    with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
+        filename = urllib.urlretrieve(resp.location, tmp_file.name)
+        with Dataset(filename) as data:
+            assert len(data.variable) > 0
