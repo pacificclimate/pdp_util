@@ -202,18 +202,16 @@ def test_RasterServer_orca(mm_database_dsn, config, environ):
     r_server = RasterServer(mm_database_dsn, config)
     resp = r_server(environ, Response())
 
-
     assert resp.status_code == 301
 
     with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
         urllib.urlretrieve(resp.location, tmp_file.name)
-
+        
         with open(tmp_file.name, 'r') as f:
             html_content = f.read()
 
         redirect_match = search("<a href=\"(http://[^>\"]*)\"", html_content)
         urllib.urlretrieve(redirect_match.group(1), tmp_file.name)
-
         data = Dataset(tmp_file.name)
         assert len(data.dimensions) > 0
 
