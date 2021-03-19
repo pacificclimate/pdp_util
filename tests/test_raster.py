@@ -1,5 +1,6 @@
 import pytest
 import urllib
+from re import search
 from os.path import basename
 from pdp_util.raster import (
     ensemble_files, db_raster_catalog, db_raster_configurator, EnsembleCatalog, RasterServer
@@ -179,8 +180,8 @@ def test_raster_metadata_minmax_bad_params(
                 'api_version': 0,
                 'handlers': [
                     {
-                        'url': 'pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc',
-                        'file': '/storage/data/climate/downscale/CMIP5/BCSD/pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc'
+                        'url': 'tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc',
+                        'file': '/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/tasmin_day_BCCAQv2+ANUSPLIN300_inmcm4_historical+rcp85_r1i1p1_19500101-21001231.nc'
                     },
                     {
                         'url': 'pr+tasmin+tasmax+wind_day_CGCM3_A1B_run1_19500101-21001231.nc',
@@ -188,11 +189,11 @@ def test_raster_metadata_minmax_bad_params(
                     },
                 ],
                 'ensemble' : 'bccaq2',
-                'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333'
+                'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333/data'
             },
             {
-                'PATH_INFO' : 'pr+tasmax+tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.nc',
-                'QUERY_STRING' : 'tasmax[0:150][0:91][0:206]&',
+                'PATH_INFO' : 'tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.nc',
+                'QUERY_STRING' : 'tasmin[0:150][0:91][0:206]&',
 }
         )
     ]
@@ -201,11 +202,18 @@ def test_RasterServer_orca(mm_database_dsn, config, environ):
     r_server = RasterServer(mm_database_dsn, config)
     resp = r_server(environ, Response())
 
-    print(resp.location)
 
     assert resp.status_code == 301
-    assert config['thredds_root'] in resp.location
+
     with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-        filename = urllib.urlretrieve(resp.location, tmp_file.name)
-        with Dataset(filename) as data:
-            assert len(data.variable) > 0
+        urllib.urlretrieve(resp.location, tmp_file.name)
+
+        with open(tmp_file.name, 'r') as f:
+            html_content = f.read()
+
+        redirect_match = search("<a href=\"(http://[^>\"]*)\"", html_content)
+        urllib.urlretrieve(redirect_match.group(1), tmp_file.name)
+
+        data = Dataset(tmp_file.name)
+        assert len(data.dimensions) > 0
+

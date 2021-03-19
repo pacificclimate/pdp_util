@@ -3,7 +3,6 @@ from os.path import basename
 
 from tempfile import NamedTemporaryFile
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from pydap.wsgi.app import DapServer
 from pdp_util import session_scope
 from modelmeta import (
     DataFile,
@@ -244,7 +243,7 @@ def build_orca_url(handlers, thredds_root, req):
             filename = handler['file']
             break
 
-    return thredds_root + '/' + filename + '/' + req.query_string[:-1]
+    return thredds_root + '/' + filename + ':' + req.query_string[:-1]
 
 def db_raster_catalog(session, ensemble, root_url):
     """A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
