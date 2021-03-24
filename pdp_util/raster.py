@@ -237,6 +237,14 @@ class RasterMetadata(object):
 
 
 def build_orca_url(handlers, thredds_root, req):
+    '''orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
+    to THREDDS into bite-sized chunks and then reasemmbles them for the user.
+
+    Orca is available through a url with the format:
+    [thredds_root]/data/[filepath]:[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
+
+    where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
+    '''
     filename = None
     for handler in handlers:
         if handler['url'] == req.path_info[:-3]:
