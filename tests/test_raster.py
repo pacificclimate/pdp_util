@@ -195,9 +195,6 @@ def test_raster_metadata_minmax_bad_params(
     [
         {
                 'root_url': 'http://tools.pacificclimate.org/dataportal/data/vic_gen1/',
-                'name': 'testing-server',
-                'version': 0,
-                'api_version': 0,
                 'handlers': [
                     {
                         'url': 'tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc',
@@ -208,7 +205,6 @@ def test_raster_metadata_minmax_bad_params(
                         'file': '/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc'
                     },
                 ],
-                'ensemble' : 'bccaq2',
                 'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333/data'
             }
     ]
@@ -233,3 +229,35 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
         assert 'lon' in data.dimensions
         assert var in data.variables
 
+
+@pytest.mark.online
+@pytest.mark.parametrize(
+    ("environ", "config"),
+    [
+        (
+            {
+                'PATH_INFO' : 'bad_path.nc.nc',
+                'QUERY_STRING' : 'tasmin[0:150][0:91][0:206]&',
+            },
+            {
+                'root_url': 'http://tools.pacificclimate.org/dataportal/data/vic_gen1/',
+                'handlers': [
+                    {
+                        'url': 'bad_path.nc',
+                        'file': 'bad_file.nc'
+                    },
+                ],
+                'thredds_root' : 'http://docker-dev03.pcic.uvic.ca:30333/data'
+            }
+        )
+    ]
+)
+def test_RasterServer_orca_error(mm_database_dsn, config, environ):
+    r_server = RasterServer(mm_database_dsn, config)
+    resp = r_server(environ, Response())
+
+    with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
+        urllib.urlretrieve(resp.location, tmp_file.name)
+        with open(tmp_file.name, 'r') as f:
+            html_content = f.read()
+        assert 'Server Error' in html_content
