@@ -1,4 +1,4 @@
-from urllib import urlencode
+from urllib.parse import urlencode
 from datetime import datetime
 
 from pycds import CrmpNetworkGeoserver as cng
@@ -37,7 +37,7 @@ def test_single_column_select(test_session):
     assert isinstance(stns[0][0], int)
 
 def test_get_clip_dates():
-    sdate, edate = datetime(2000, 01, 01), datetime(2000, 01, 31)
+    sdate, edate = datetime(2000, 1, 1), datetime(2000, 1, 31)
     params = {'from-date': sdate.strftime('%Y/%m/%d'),
                'to-date': edate.strftime('%Y/%m/%d')}
     req = Request.blank('?' + urlencode(params))

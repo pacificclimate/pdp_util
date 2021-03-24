@@ -1,4 +1,4 @@
-from urllib import urlencode
+from urllib.parse import urlencode
 from datetime import datetime
 
 import pytest
@@ -46,7 +46,7 @@ def test_count_record_length_app(test_session):
     assert data['climo_length'] == 412
 
 
-sdate, edate = datetime(2000, 01, 01), datetime(2000, 01, 31)
+sdate, edate = datetime(2000, 1, 1), datetime(2000, 1, 31)
 @pytest.mark.parametrize(('params'), (
     {'from-date': sdate.strftime('%Y/%m/%d'),
      'to-date': edate.strftime('%Y/%m/%d')},

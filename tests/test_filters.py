@@ -1,5 +1,5 @@
 from datetime import datetime
-from urllib import urlencode
+from urllib.parse import urlencode
 
 from pdp_util.filters import form_filters, validate_vars
 from pycds import CrmpNetworkGeoserver as cng

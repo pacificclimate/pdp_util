@@ -37,4 +37,4 @@ def dict_to_dsn(d):
         d['login'] = '{user}:{password}'.format(**d) if 'password' in d else d['user']
         return '{dialect}+{driver}://{login}@{host}/{database}'.format(**d)
     else:
-        raise KeyError, "The mapping must contain keys for at least 'database', 'user', and 'host'"
+        raise KeyError("The mapping must contain keys for at least 'database', 'user', and 'host'")

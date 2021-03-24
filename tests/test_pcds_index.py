@@ -12,7 +12,7 @@ def make_common_assertions(resp):
     assert resp.status == '200 OK'
     assert resp.content_type == 'text/html'
     assert resp.content_length < 0
-    print resp.body
+    print(resp.body)
 
 def test_climo_index(conn_params, test_session):
     app = PcdsIsClimoIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params) #FIXME: template path is fragile

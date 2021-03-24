@@ -1,5 +1,5 @@
 import re
-from StringIO import StringIO
+from io import StringIO
 import datetime
 from pkg_resources import resource_filename
 
