@@ -9,6 +9,7 @@ def test_can_initialize(conn_params):
     app = LegendApp(conn_params)
     assert True
 
+
 def test_legend_app(conn_params):
     app = LegendApp(conn_params)
     req = Request.blank('/apps/legend/flnro-wmb.png')
@@ -19,7 +20,7 @@ def test_legend_app(conn_params):
 
 def test_caching(conn_params):
     url = '/apps/legend/flnro-wmb.png'
-    
+
     app = LegendApp(conn_params)
     server_load_time = app.load_time
     pre_load_time = server_load_time - timedelta(0, 60)
@@ -47,7 +48,7 @@ def test_unknown_network(conn_params):
     assert resp.status == '200 OK'
     assert resp.content_type == 'application/png'
     # FIXME: should actually find a way to test the image color... load it with PIL?
-    
+
 def test_404s(conn_params):
     app = LegendApp(conn_params)
     urls = ['', 'missing_leading_slash.png', '/a/directory/', 'doesnt_end_with_png.txt']

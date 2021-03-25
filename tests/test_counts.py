@@ -24,8 +24,8 @@ def test_count_stations_app(test_session, filters, expected):
     resp = req.get_response(app)
     assert resp.status == '200 OK'
     assert resp.content_type == 'application/json'
-    assert 'stations_selected' in resp.body
-    data = json.loads(resp.body)
+    assert 'stations_selected' in resp.app_iter
+    data = json.loads(resp.app_iter)
     assert data['stations_selected'] == expected
 
 
@@ -36,10 +36,10 @@ def test_count_record_length_app(test_session):
 
     assert resp.status == '200 OK'
     assert resp.content_type == 'application/json'
-    assert 'record_length' in resp.body
-    assert 'climo_length' in resp.body
+    assert 'record_length' in resp.app_iter
+    assert 'climo_length' in resp.app_iter
 
-    data = json.loads(resp.body)
+    data = json.loads(resp.app_iter)
     assert 'record_length' in data
     assert 'climo_length' in data
     assert data['record_length'] == 1969
@@ -66,17 +66,17 @@ def test_filter_dates_on_record_length_app(test_session, params):
 
     # Get the base number of records
     req = Request.blank('', {'sesh': test_session})
-    base_number = json.loads(req.get_response(app).body)
+    base_number = json.loads(req.get_response(app).app_iter)
 
     req = Request.blank('?' + urlencode(params), {'sesh': test_session})
     resp = req.get_response(app)
 
     assert resp.status == '200 OK'
     assert resp.content_type == 'application/json'
-    assert 'record_length' in resp.body
-    assert 'climo_length' in resp.body
+    assert 'record_length' in resp.app_iter
+    assert 'climo_length' in resp.app_iter
     
-    data = json.loads(resp.body)
+    data = json.loads(resp.app_iter)
     assert 'record_length' in data
     assert 'climo_length' in data
     assert data['record_length'] > 0

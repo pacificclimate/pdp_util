@@ -9,7 +9,7 @@ def test_multiform_key_overwrite():
     conn_params = {'database': 'crmp', 'user': 'hiebert', 'host': 'monsoon.pcic.uvic.ca'}
     d[conn_params] = 'bar'
     assert len(d.keys()) == 1
-    assert d.keys() == ['postgresql+psycopg2://hiebert@monsoon.pcic.uvic.ca/crmp']
+    assert list(d.keys()) == ['postgresql+psycopg2://hiebert@monsoon.pcic.uvic.ca/crmp']
 
 def test_password_substitution():
     d = DbDict()

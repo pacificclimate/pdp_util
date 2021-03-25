@@ -1,5 +1,5 @@
 import re
-from io import StringIO
+from io import BytesIO
 import datetime
 from pkg_resources import resource_filename
 
@@ -55,7 +55,7 @@ class LegendApp(object):
         _, _, _, a = alpha.split()
         r, g, b =  Image.new('RGB', alpha.size, color).split()
         outim = Image.merge(alpha.mode, [r,g,b,a])
-        buf = StringIO()
+        buf = BytesIO()
         outim.save(buf, format='png')
         contents = buf.getvalue()
 

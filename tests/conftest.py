@@ -389,6 +389,6 @@ def test_wsgi_app():
         if content_type != 'application/json':
             return resp, None
 
-        json_body = json.loads(resp.body)
+        json_body = json.loads(resp.app_iter)
         return resp, json_body
     return f

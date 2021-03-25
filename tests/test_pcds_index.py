@@ -11,8 +11,7 @@ from pycds import *
 def make_common_assertions(resp):
     assert resp.status == '200 OK'
     assert resp.content_type == 'text/html'
-    assert resp.content_length < 0
-    print(resp.body)
+    assert resp.content_length is None
 
 def test_climo_index(conn_params, test_session):
     app = PcdsIsClimoIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params) #FIXME: template path is fragile
@@ -26,8 +25,8 @@ def test_climo_index(conn_params, test_session):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    assert "Climatological calculations" in resp.body
-    assert "raw/" in resp.body
+    assert "Climatological calculations" in str(resp.app_iter)
+    assert "raw/" in str(resp.app_iter)
     
 def test_network_index(conn_params, test_session):
     app = PcdsNetworkIndex(app_root='/', templates=resource_filename('pdp_util', 'templates'), conn_params=conn_params, is_climo=False) #FIXME: template path is fragile
@@ -46,11 +45,11 @@ def test_network_index(conn_params, test_session):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body, features="html.parser")
+    soup = BeautifulSoup(resp.app_iter, features="html.parser")
     
     assert "Participating CRMP Networks" in soup.title.string
-    assert "FLNRO-WMB/" in resp.body
-    assert "Environment Canada (Canadian Daily Climate Data 2007)" in resp.body
+    assert "FLNRO-WMB/" in str(resp.app_iter)
+    assert "Environment Canada (Canadian Daily Climate Data 2007)" in str(resp.app_iter)
 
 def test_station_index(conn_params, test_session):
 
@@ -62,14 +61,14 @@ def test_station_index(conn_params, test_session):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body, features="html.parser")
+    soup = BeautifulSoup(resp.app_iter, features="html.parser")
     
     assert "Stations for network AGRI" in soup.title.string
-    assert "de107/" in resp.body
-    assert "Deep Creek" in resp.body
+    assert "de107/" in str(resp.app_iter)
+    assert "Deep Creek" in str(resp.app_iter)
 
-    assert "de107climo/" not in resp.body
-    assert 'Deep "Climo Station" Creek' not in resp.body
+    assert "de107climo/" not in str(resp.app_iter)
+    assert 'Deep "Climo Station" Creek' not in str(resp.app_iter)
 
 def test_station_index_for_climatologies(conn_params, test_session):
 
@@ -81,10 +80,10 @@ def test_station_index_for_climatologies(conn_params, test_session):
     resp = req.get_response(app)
     make_common_assertions(resp)
 
-    soup = BeautifulSoup(resp.body, features="html.parser")
+    soup = BeautifulSoup(str(resp.app_iter), features="html.parser")
 
     assert "Stations for network MoTIe" in soup.title.string
-    assert "15124/" not in resp.body
-    assert "Jackass" not in resp.body
-    assert "34129/" in resp.body
-    assert 'London Ridge High' in resp.body
+    assert "15124/" not in str(resp.app_iter)
+    assert "Jackass" not in str(resp.app_iter)
+    assert "34129/" in str(resp.app_iter)
+    assert 'London Ridge High' in str(resp.app_iter)
