@@ -28,7 +28,7 @@ setup(
     author_email="hiebert@uvic.ca",
     install_requires=['webob',
                       'openid2rp',
-                      'genshi',
+                      'genshi==0.7.5',
                       'paste',
                       'beaker',
                       'pillow',
