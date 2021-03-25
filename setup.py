@@ -38,8 +38,8 @@ setup(
                       'numpy',
                       'python-dateutil',
                       # raster portal stuff
-                      'pydap_pdp >=3.2.1',
-                      'pydap.handlers.pcic >=0.0.3',
+                      #'pydap_pdp >=3.2.1',
+                      #'pydap.handlers.pcic >=0.0.3',
                       'modelmeta >=0.3.0',
                       'PyYAML'
                       ],

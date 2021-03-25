@@ -7,7 +7,7 @@ PyYAML==3.13
 WebOb==1.8.5
 modelmeta==0.3.0
 numpy==1.16.0
-pydap-pdp==3.2.2
+#pydap-pdp==3.2.2
 pydap==3.2.2
 #pydap.handlers.pcic==0.0.7
 python-dateutil==2.7.5
