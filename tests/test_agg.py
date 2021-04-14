@@ -18,6 +18,7 @@ from pdp_util.agg import (
 # import pydap.handlers.pcic
 
 import pytest
+import pydap_extras
 
 stns = [("ARDA", "115084"), ("EC_raw", "1046332"), ("FLNRO-WMB", "369")]
 
@@ -76,20 +77,28 @@ def test_get_all_metadata_index_responders(
     assert filenames == expected_filenames
 
 
-# def test_get_pcds_responders(conn_params, monkeypatch):
-#     # Don't care about content (tested elsewhere); just return the environ
-#     monkeypatch.setattr(pydap.handlers.pcic.PcicSqlHandler, '__call__', lambda x, y, z: y)
+def test_get_pcds_responders(conn_params, monkeypatch):
+    # Don't care about content (tested elsewhere); just return the environ
+    monkeypatch.setattr(
+        pydap_extras.handlers.pcic.PcicSqlHandler, "__call__", lambda x, y, z: y
+    )
 
-#     now = datetime.now()
-#     response = get_pcds_responders(conn_params, stns, 'csv', (now, now), {})
+    now = datetime.now()
+    response = get_pcds_responders(conn_params, stns, "csv", (now, now), {})
 
-#     expected_names = ['ARDA/115084.csv', 'EC_raw/1046332.csv', 'FLNRO-WMB/369.csv']
-#     expected_paths = ['/ARDA/115084.rsql.csv', '/EC_raw/1046332.rsql.csv', '/FLNRO-WMB/369.rsql.csv']
+    expected_names = ["ARDA/115084.csv", "EC_raw/1046332.csv", "FLNRO-WMB/369.csv"]
+    expected_paths = [
+        "/ARDA/115084.rsql.csv",
+        "/EC_raw/1046332.rsql.csv",
+        "/FLNRO-WMB/369.rsql.csv",
+    ]
 
-#     for expected_name, expected_path, (name, env) in zip(expected_names, expected_paths, response):
-#         assert expected_name == name
-#         assert expected_path == env['PATH_INFO']
-#         assert str(now) in env['QUERY_STRING']
+    for expected_name, expected_path, (name, env) in zip(
+        expected_names, expected_paths, response
+    ):
+        assert expected_name == name
+        assert expected_path == env["PATH_INFO"]
+        assert str(now) in env["QUERY_STRING"]
 
 
 def test_ziperator():
