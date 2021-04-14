@@ -405,7 +405,8 @@ def test_wsgi_app():
         if content_type != "application/json":
             return resp, None
 
-        json_body = json.loads(resp.app_iter)
+        resp_body = resp.app_iter[0] if type(resp.app_iter) == list else resp.app_iter
+        json_body = json.loads(resp_body)
         return resp, json_body
 
     return f
