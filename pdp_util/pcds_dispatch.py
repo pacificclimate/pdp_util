@@ -69,12 +69,12 @@ class PcdsDispatcher(object):
 
         :param path: the PATH_INFO of the request
         """
-        logger.debug("Attempting to route a request to path: {}".format(path))
+        logger.debug(f"Attempting to route a request to path: {path}")
         index_kwargs = self.kwargs
         if "pcds" in path:
             path = path.split("pcds", 1)[1]
         url_parts = path.strip("/").split("/")
-        logger.debug("url_parts: {}".format(url_parts))
+        logger.debug(f"url_parts: {url_parts}")
 
         try:
             is_climo = url_parts.pop(0)
@@ -131,7 +131,7 @@ class PcdsDispatcher(object):
                 "." not in path
             ):  # Assume that it's just a listing and not point to a dataset
                 env["PATH_INFO"] = (
-                    path.rstrip("/") + ".%s.html" % ext
+                    path.rstrip("/") + f".{ext}.html"
                 )  # FIXME html response!
 
             kwargs = {"sesh": environ.get("sesh", None)}

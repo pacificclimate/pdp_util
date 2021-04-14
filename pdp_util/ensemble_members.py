@@ -38,9 +38,7 @@ class EnsembleMemberLister(object):
                     {
                         "code": 404,
                         "message": "Not Found",
-                        "details": "Ensemble named '{}' not found".format(
-                            ensemble_name
-                        ),
+                        "details": f"Ensemble named '{ensemble_name}' not found",
                     }
                 )
 

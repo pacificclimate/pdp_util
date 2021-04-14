@@ -69,12 +69,12 @@ class FormFilter(namedtuple("FormFilter", "input_name regex sql_constraint")):
         return value if m else None
 
     def __str__(self):
-        return "<FormFilter> %s:%s" % (self.name, self.value)
+        return f"<FormFilter> {self.name}:{self.value}"
 
 
 def mk_mp_regex():
     decimal = r"-?[0-9]+(.[0-9]+)?"
-    point = "%(decimal)s %(decimal)s" % locals()
+    point = f"{decimal} {decimal}"
     inner = r"\(%(point)s(, ?%(point)s){2,}\)" % locals()
     outer = inner
     polygon = r"\(%(outer)s(, ?%(inner)s)?\)" % locals()
@@ -113,7 +113,7 @@ form_filters = {
         # identifier.
         "input-var",
         r"[a-z: _]+",
-        lambda x: cng.vars.like("%{}%".format(x)),
+        lambda x: cng.vars.like(f"%{x}%"),
     ),
     "input-vars": FormFilter(
         # Comma-separated list (as string) of variable identifiers.

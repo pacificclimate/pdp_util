@@ -22,8 +22,7 @@ def test_db_raster_catalog(mm_test_session, ensemble, root_url):
     result = db_raster_catalog(mm_test_session, ensemble.name, root_url)
     data_files = {dfv.file for dfv in ensemble.data_file_variables}
     assert result == {
-        df.unique_id: "{}{}".format(root_url, basename(df.filename))
-        for df in data_files
+        df.unique_id: f"{root_url}{basename(df.filename)}" for df in data_files
     }
 
 
@@ -82,8 +81,7 @@ def test_ensemble_catalog(mm_database_dsn, test_wsgi_app, ensemble, root_url, ur
     resp, body = test_wsgi_app(app, url, "200 OK", "application/json")
     data_files = {dfv.file for dfv in ensemble.data_file_variables}
     assert body == {
-        df.unique_id: "{}{}".format(root_url, basename(df.filename))
-        for df in data_files
+        df.unique_id: f"{root_url}{basename(df.filename)}" for df in data_files
     }
 
 

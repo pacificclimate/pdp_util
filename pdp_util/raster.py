@@ -102,7 +102,7 @@ class RasterCatalog(RasterServer):
             return super(RasterCatalog, self).__call__(environ, start_response)
         else:
             return response_404(
-                start_response, "URL path '{}' not found".format(str(req.path_info))
+                start_response, f"URL path '{str(req.path_info)}' not found"
             )
 
 

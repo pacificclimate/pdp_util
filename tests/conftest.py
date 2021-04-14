@@ -133,7 +133,7 @@ def mm_empty_session(mm_engine, mm_schema_name):
     """Single-test database session.
     All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
-    session.execute("SET search_path TO {}, public".format(mm_schema_name))
+    session.execute(f"SET search_path TO {mm_schema_name}, public")
     yield session
     session.rollback()
     session.close()
@@ -143,18 +143,18 @@ def mm_empty_session(mm_engine, mm_schema_name):
 
 
 def make_model(i):
-    return Model(short_name="model_{}".format(i), type="model_type")
+    return Model(short_name=f"model_{i}", type="model_type")
 
 
 def make_emission(i):
     return Emission(
-        short_name="emission_{}".format(i),
+        short_name=f"emission_{i}",
     )
 
 
 def make_run(i, model, emission):
     return Run(
-        name="emission_{}".format(i),
+        name=f"emission_{i}",
         model=model,
         emission=emission,
     )
@@ -162,9 +162,9 @@ def make_run(i, model, emission):
 
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
-        filename="/storage/data_file_{}.nc".format(i),
+        filename=f"/storage/data_file_{i}.nc",
         first_1mib_md5sum="first_1mib_md5sum",
-        unique_id="unique_id_{}".format(i),
+        unique_id=f"unique_id_{i}",
         x_dim_name="lon",
         y_dim_name="lat",
         t_dim_name="time",
@@ -176,17 +176,17 @@ def make_data_file(i, run=None, timeset=None):
 
 def make_variable_alias(i):
     return VariableAlias(
-        long_name="long_name_{}".format(i),
-        standard_name="standard_name_{}".format(i),
-        units="units_{}".format(i),
+        long_name=f"long_name_{i}",
+        standard_name=f"standard_name_{i}",
+        units=f"units_{i}",
     )
 
 
 def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     return DataFileVariableDSGTimeSeries(
-        derivation_method="derivation_method_{}".format(i),
-        variable_cell_methods="variable_cell_methods_{}".format(i),
-        netcdf_variable_name="var_{}".format(i),
+        derivation_method=f"derivation_method_{i}",
+        variable_cell_methods=f"variable_cell_methods_{i}",
+        netcdf_variable_name=f"var_{i}",
         disabled=False,
         range_min=0,
         range_max=100,
@@ -198,8 +198,8 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
 def make_ensemble(i, data_file_variables):
     return Ensemble(
         changes="changes",
-        description="Ensemble {}".format(i),
-        name="ensemble_{}".format(i),
+        description=f"Ensemble {i}",
+        name=f"ensemble_{i}",
         version=float(i),
         data_file_variables=data_file_variables,
     )
@@ -383,7 +383,7 @@ def query_params():
 
     def f(*nv_pairs):
         return "?" + "&".join(
-            "{}={}".format(name, value) for name, value in nv_pairs if value is not None
+            f"{name}={value}" for name, value in nv_pairs if value is not None
         )
 
     return f

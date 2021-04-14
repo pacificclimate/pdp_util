@@ -103,7 +103,7 @@ def get_all_metadata_index_responders(sesh, stations, climo=False):
     """
     for station in stations:
         network_name = station[0]
-        filename = "{0}/variables.csv".format(network_name)
+        filename = f"{network_name}/variables.csv"
         yield (filename, metadata_index_responder(sesh, network_name, climo))
 
 
@@ -183,16 +183,16 @@ def get_pcds_responders(dsn, stns, extension, clip_dates, environ):
     content_length = 0
     for net, stn in stns:
         newenv = environ.copy()
-        newenv["PATH_INFO"] = "/%s/%s.%s.%s" % (net, stn, handler_ext, extension)
+        newenv["PATH_INFO"] = f"/{net}/{stn}.{handler_ext}.{extension}"
 
         qs = []
         if sdate:
-            qs.append("station_observations.time>='%s'" % sdate)
+            qs.append(f"station_observations.time>='{sdate}'")
         if edate:
-            qs.append("station_observations.time<='%s'" % edate)
+            qs.append(f"station_observations.time<='{edate}'")
         newenv["QUERY_STRING"] = "&".join(qs)
 
-        name = "%(net)s/%(stn)s.%(extension)s" % locals()
+        name = f"{net}/{stn}.{extension}"
         yield (name, handler(newenv, null_start_response))
 
 
