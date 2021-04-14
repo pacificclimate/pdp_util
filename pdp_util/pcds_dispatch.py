@@ -1,6 +1,6 @@
 import logging
 
-from pydap.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
+from pydap_extras.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
 from pdp_util.pcds_index import PcdsNetworkIndex, PcdsStationIndex, PcdsIsClimoIndex
 from paste.httpexceptions import HTTPNotFound, HTTPSeeOther
 
