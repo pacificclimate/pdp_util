@@ -79,7 +79,7 @@
 
 #     soup = BeautifulSoup(resp.body, features="html.parser")
 #     assert soup.title.string == 'PCDS: Stations for network network_does_not_exist'
-    
+
 #     stuff = soup.find_all('tr')
 #     assert len(stuff) == 1 # No stations to list
 
@@ -123,10 +123,9 @@
 #     req = Request.blank(url)
 #     resp = req.get_response(the_app)
 #     assert resp.status == '404 Not Found'
-    
+
 # def dont_test_junk_at_the_end(the_app):
 #     url = '/raw/network_does_not_exist/plus_bad_station'
 #     req = Request.blank(url)
 #     resp = req.get_response(the_app)
 #     make_common_assertions(resp)
-    
