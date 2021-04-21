@@ -22,6 +22,7 @@ import pydap_extras
 
 stns = [("ARDA", "115084"), ("EC_raw", "1046332"), ("FLNRO-WMB", "369")]
 
+
 def test_can_instantiate(test_session, conn_params):
     app = PcdsZipApp(conn_params, test_session)
 
