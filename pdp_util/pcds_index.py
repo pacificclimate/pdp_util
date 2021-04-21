@@ -126,10 +126,8 @@ class PcdsNetworkIndex(PcdsIndex):
             "short_name": "Network name",
             "long_name": "Network description",
         }
-        kwargs = dict(
-            list(defaults.items()) + list(kwargs.items())
-        )  # FIXME: defaults.update()?
-        PcdsIndex.__init__(self, **kwargs)
+        defaults.update(kwargs.items())
+        PcdsIndex.__init__(self, **defaults)
 
     def get_elements(self, sesh):
         """Runs a database query and returns a list of (``network_name``, ``network_description``) pairs for which there exists either climo or raw data."""
