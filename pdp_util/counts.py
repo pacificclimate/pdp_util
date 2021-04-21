@@ -110,19 +110,3 @@ def length_of_return_climo(sesh, stn_ids):
         .filter(History.station_id.in_(stn_ids))
     )
     return sesh.execute(q).first()
-
-
-if __name__ == "__main__":
-    port = 8555
-    from flask import Flask
-
-    conn_params = {
-        "database": "crmp",
-        "user": "hiebert",
-        "host": "monsoon.pcic.uvic.ca",
-    }
-    main = CountRecordLengthApp(conn_params, 100)
-    app = Flask(__name__)
-    app.wsgi_app = main
-    app.debug = True
-    app.run("0.0.0.0", port, use_reloader=True, debug=True, use_debugger=True)
