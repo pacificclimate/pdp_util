@@ -78,7 +78,7 @@ def ziperator(responders):
     :param responders: A list of (``name``, ``generator``) pairs where ``name`` is the filename to use in the zip archive and ``generator`` should yield all bytes for a single file.
     :rtype: iterator
     """
-    with SpooledTemporaryFile(1024 * 3) as f:
+    with SpooledTemporaryFile(1024 ** 3) as f:
         yield b"PK"  # Response headers aren't sent until the first chunk of data is sent.  Let's get this repsonse moving!
         z = ZipFile(f, "w", ZIP_DEFLATED)
 
