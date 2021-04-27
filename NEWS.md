@@ -1,5 +1,11 @@
 # News / Release Notes
 
+## 2.0.0
+
+*Release Date: 2021-April-27*
+
+- [Update for Python 3](https://github.com/pacificclimate/pdp_util/pull/31)
+
 ## 1.1.0
 
 *Release Date: 2021-Jan-14*
