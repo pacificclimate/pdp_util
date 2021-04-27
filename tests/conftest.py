@@ -28,41 +28,43 @@ from pdp_util.ensemble_members import EnsembleMemberLister
 from pdp_util.raster import RasterMetadata
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def engine():
     """Test-session-wide database engine"""
     with testing.postgresql.Postgresql() as pg:
         engine = create_engine(pg.url())
         engine.execute("create extension postgis")
-        engine.execute(CreateSchema('crmp'))
+        engine.execute(CreateSchema("crmp"))
         pycds.Base.metadata.create_all(bind=engine)
         yield engine
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def empty_session(engine):
     """Single-test database session. All session actions are rolled back on teardown"""
     session = sessionmaker(bind=engine)()
     # Default search path is `"$user", public`. Need to reset that to search crmp (for our db/orm content) and
     # public (for postgis functions)
-    session.execute('SET search_path TO crmp, public')
+    session.execute("SET search_path TO crmp, public")
     # print('\nsearch_path', [r for r in session.execute('SHOW search_path')])
     yield session
     session.rollback()
     session.close()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def test_session(empty_session):
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.ERROR)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
 
     empty_session.begin_nested()
-    with open(resource_filename('pycds', 'data/crmp_subset_data.sql'), 'r') as f:
+    with open(resource_filename("pycds", "data/crmp_subset_data.sql"), "r") as f:
         sql = f.read()
     empty_session.execute(sql)
     empty_session.commit()
 
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO) # Let's not log all the db setup stuff...
+    logging.getLogger("sqlalchemy.engine").setLevel(
+        logging.INFO
+    )  # Let's not log all the db setup stuff...
 
     yield empty_session
 
@@ -102,19 +104,20 @@ def conn_params(test_session):
 
 # TODO: Factor out common engine creation (common with crmp database above)
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def mm_database_dsn():
     """Test-session-wide testing.Postgresql instance; returns dsn for it"""
     with testing.postgresql.Postgresql() as pg:
         yield pg.url()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mm_schema_name():
-    return 'test_meta'
+    return "test_meta"
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mm_engine(mm_database_dsn, mm_schema_name):
     """Test-session-wide database engine"""
     engine = create_engine(mm_database_dsn)
@@ -125,14 +128,12 @@ def mm_engine(mm_database_dsn, mm_schema_name):
     engine.dispose()
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def mm_empty_session(mm_engine, mm_schema_name):
     """Single-test database session.
     All session actions are rolled back on teardown"""
     session = sessionmaker(bind=mm_engine)()
-    session.execute(
-        'SET search_path TO {}, public'.format(mm_schema_name)
-    )
+    session.execute(f"SET search_path TO {mm_schema_name}, public")
     yield session
     session.rollback()
     session.close()
@@ -140,22 +141,20 @@ def mm_empty_session(mm_engine, mm_schema_name):
 
 # Database test object constructors
 
+
 def make_model(i):
-    return Model(
-        short_name='model_{}'.format(i),
-        type='model_type'
-    )
+    return Model(short_name=f"model_{i}", type="model_type")
 
 
 def make_emission(i):
     return Emission(
-        short_name='emission_{}'.format(i),
+        short_name=f"emission_{i}",
     )
 
 
 def make_run(i, model, emission):
     return Run(
-        name='emission_{}'.format(i),
+        name=f"emission_{i}",
         model=model,
         emission=emission,
     )
@@ -163,12 +162,12 @@ def make_run(i, model, emission):
 
 def make_data_file(i, run=None, timeset=None):
     return DataFile(
-        filename='/storage/data_file_{}.nc'.format(i),
-        first_1mib_md5sum='first_1mib_md5sum',
-        unique_id='unique_id_{}'.format(i),
-        x_dim_name='lon',
-        y_dim_name='lat',
-        t_dim_name='time',
+        filename=f"/storage/data_file_{i}.nc",
+        first_1mib_md5sum="first_1mib_md5sum",
+        unique_id=f"unique_id_{i}",
+        x_dim_name="lon",
+        y_dim_name="lat",
+        t_dim_name="time",
         index_time=datetime.datetime.now(),
         run=run,
         timeset=timeset,
@@ -177,17 +176,17 @@ def make_data_file(i, run=None, timeset=None):
 
 def make_variable_alias(i):
     return VariableAlias(
-        long_name='long_name_{}'.format(i),
-        standard_name='standard_name_{}'.format(i),
-        units='units_{}'.format(i),
+        long_name=f"long_name_{i}",
+        standard_name=f"standard_name_{i}",
+        units=f"units_{i}",
     )
 
 
 def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
     return DataFileVariableDSGTimeSeries(
-        derivation_method='derivation_method_{}'.format(i),
-        variable_cell_methods='variable_cell_methods_{}'.format(i),
-        netcdf_variable_name='var_{}'.format(i),
+        derivation_method=f"derivation_method_{i}",
+        variable_cell_methods=f"variable_cell_methods_{i}",
+        netcdf_variable_name=f"var_{i}",
         disabled=False,
         range_min=0,
         range_max=100,
@@ -198,9 +197,9 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
 
 def make_ensemble(i, data_file_variables):
     return Ensemble(
-        changes='changes',
-        description='Ensemble {}'.format(i),
-        name='ensemble_{}'.format(i),
+        changes="changes",
+        description=f"Ensemble {i}",
+        name=f"ensemble_{i}",
         version=float(i),
         data_file_variables=data_file_variables,
     )
@@ -230,51 +229,61 @@ def make(maker, arg_list, auto_ids=True):
 # These are all objects that could be inserted into a database, with
 # all the appropriate relationships established between them.
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope="function")
 def models():
     return make(make_model, 2)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def emissions():
     return make(make_emission, 2)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def runs(models, emissions):
-    return make(make_run, [
-        (models[0], emissions[0]),
-        (models[0], emissions[1]),
-    ])
+    return make(
+        make_run,
+        [
+            (models[0], emissions[0]),
+            (models[0], emissions[1]),
+        ],
+    )
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def data_files(runs):
     return make(make_data_file, [runs[0], runs[1], runs[0]])
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def variable_aliases():
     return make(make_variable_alias, 2)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def dfv_dsg_tss(data_files, variable_aliases):
-    return make(make_dfv_dsg_time_series, [
-        (data_files[0], variable_aliases[0]),   # var 0, uid 0
-        (data_files[0], variable_aliases[1]),   # var 1, uid 0
-        (data_files[1], variable_aliases[1]),   # var 2, uid 1
-        (data_files[2], variable_aliases[1]),   # var 3, uid 2
-    ])
+    return make(
+        make_dfv_dsg_time_series,
+        [
+            (data_files[0], variable_aliases[0]),  # var 0, uid 0
+            (data_files[0], variable_aliases[1]),  # var 1, uid 0
+            (data_files[1], variable_aliases[1]),  # var 2, uid 1
+            (data_files[2], variable_aliases[1]),  # var 3, uid 2
+        ],
+    )
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def ensembles(dfv_dsg_tss):
-    return make(make_ensemble, [
-        [dfv_dsg_tss[0], dfv_dsg_tss[2]],
-        [dfv_dsg_tss[2], dfv_dsg_tss[3]],
-        [],
-    ])
+    return make(
+        make_ensemble,
+        [
+            [dfv_dsg_tss[0], dfv_dsg_tss[2]],
+            [dfv_dsg_tss[2], dfv_dsg_tss[3]],
+            [],
+        ],
+    )
 
 
 # Convenience fixtures that retrieve objects from database construction
@@ -285,16 +294,17 @@ def ensembles(dfv_dsg_tss):
 # We could do one for each type of object (model, run, etc.), but it turns out
 # we only need ensemble. Easy to add other fixtures at need, two lines each.
 
+
 def get_from(array, index):
     return None if index is None else array[index]
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def ensemble(ensembles, request):
     return get_from(ensembles, request.param)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def mm_test_session_objects(
     models,
     emissions,
@@ -308,18 +318,20 @@ def mm_test_session_objects(
     the test session(s).
     """
     return (
-        models +
-        emissions +
-        runs +
-        data_files +
-        variable_aliases +
-        dfv_dsg_tss +
+        models
+        + emissions
+        + runs
+        + data_files
+        + variable_aliases
+        + dfv_dsg_tss
+        +
         # Leave out 3rd ensemble so that we have a not-found one
         ensembles[:2]
     )
 
 
 # Database sessions
+
 
 @pytest.fixture(scope="function")
 def mm_test_session(mm_empty_session, mm_test_session_objects):
@@ -349,6 +361,7 @@ def mm_test_session_committed(mm_test_session, mm_test_session_objects):
 
 # WSGI apps
 
+
 @pytest.fixture(scope="function")
 def ensemble_member_lister(mm_database_dsn):
     return EnsembleMemberLister(mm_database_dsn)
@@ -361,16 +374,18 @@ def raster_metadata(mm_database_dsn):
 
 # Helper functions as fixtures
 
+
 @pytest.fixture(scope="session")
 def query_params():
     """Returns a query parameter string formed from name-value pairs.
     Each pair is an argument; any number may be provided.
     """
+
     def f(*nv_pairs):
-        return '?' + '&'.join(
-            '{}={}'.format(name, value)
-            for name, value in nv_pairs if value is not None
+        return "?" + "&".join(
+            f"{name}={value}" for name, value in nv_pairs if value is not None
         )
+
     return f
 
 
@@ -379,6 +394,7 @@ def test_wsgi_app():
     """Generic WSGI app test
     Note: It's OK to name a fixture with test_
     """
+
     def f(app, url, status, content_type):
         req = Request.blank(url)
         resp = req.get_response(app)
@@ -386,9 +402,11 @@ def test_wsgi_app():
         assert resp.status == status
         assert resp.content_type == content_type
 
-        if content_type != 'application/json':
+        if content_type != "application/json":
             return resp, None
 
-        json_body = json.loads(resp.body)
+        resp_body = resp.app_iter[0] if type(resp.app_iter) == list else resp.app_iter
+        json_body = json.loads(resp_body)
         return resp, json_body
+
     return f
