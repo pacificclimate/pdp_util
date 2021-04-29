@@ -44,7 +44,7 @@ setup(
         "python-dateutil",
         "pydap==3.2.2",
         "pydap-extras",
-        "modelmeta >=0.3.0",
+        "modelmeta ==0.1.0",
         "PyYAML",
     ],
     tests_require=["pytest", "sqlalchemy", "beautifulsoup4"],

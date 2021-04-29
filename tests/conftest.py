@@ -14,7 +14,6 @@ from modelmeta import (
     Emission,
     Run,
     DataFile,
-    DataFileVariableDSGTimeSeries,
     VariableAlias,
     Ensemble,
 )
@@ -410,3 +409,25 @@ def test_wsgi_app():
         return resp, json_body
 
     return f
+
+
+## Raster fixtures
+
+@pytest.fixture(scope="function")
+def raster_metadata():
+    return RasterMetadata(modelmeta.test_dsn)
+
+@pytest.fixture(scope="function")
+def mm_session():
+    return modelmeta.test_session()
+
+@pytest.fixture(scope="function")
+def mm_dsn():
+    return modelmeta.test_dsn
+
+
+## ensemble fixtures
+
+@pytest.fixture(scope="function")
+def ensemble_member_lister():
+    return EnsembleMemberLister(modelmeta.test_dsn)
