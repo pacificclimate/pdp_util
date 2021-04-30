@@ -1,5 +1,5 @@
 import pytest
-import urllib
+from urllib.request import urlretrieve
 from re import search
 from os.path import basename
 from pdp_util.raster import (
@@ -216,13 +216,13 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
     assert resp.status_code == 301
 
     with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-        urllib.urlretrieve(resp.location, tmp_file.name)
+        urlretrieve(resp.location, tmp_file.name)
 
         with open(tmp_file.name, 'r') as f:
             html_content = f.read()
 
         redirect_match = search("<a href=\"(http://[^>\"]*)\"", html_content)
-        urllib.urlretrieve(redirect_match.group(1), tmp_file.name)
+        urlretrieve(redirect_match.group(1), tmp_file.name)
         data = Dataset(tmp_file.name)
         assert 'time' in data.dimensions
         assert 'lat' in data.dimensions
@@ -257,7 +257,7 @@ def test_RasterServer_orca_error(mm_database_dsn, config, environ):
     resp = r_server(environ, Response())
 
     with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-        urllib.urlretrieve(resp.location, tmp_file.name)
+        urlretrieve(resp.location, tmp_file.name)
         with open(tmp_file.name, 'r') as f:
             html_content = f.read()
         assert 'Server Error' in html_content
