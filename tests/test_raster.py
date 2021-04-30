@@ -1,4 +1,5 @@
 import pytest
+import requests
 from urllib.request import urlretrieve
 from re import search
 from os.path import basename
@@ -215,14 +216,9 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
 
     assert resp.status_code == 301
 
+    r = requests.get(resp.location, allow_redirects=True)
     with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-        urlretrieve(resp.location, tmp_file.name)
-
-        with open(tmp_file.name, 'r') as f:
-            html_content = f.read()
-
-        redirect_match = search("<a href=\"(http://[^>\"]*)\"", html_content)
-        urlretrieve(redirect_match.group(1), tmp_file.name)
+        urlretrieve(r.url, tmp_file.name)
         data = Dataset(tmp_file.name)
         assert 'time' in data.dimensions
         assert 'lat' in data.dimensions
@@ -256,8 +252,5 @@ def test_RasterServer_orca_error(mm_database_dsn, config, environ):
     r_server = RasterServer(mm_database_dsn, config)
     resp = r_server(environ, Response())
 
-    with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
-        urlretrieve(resp.location, tmp_file.name)
-        with open(tmp_file.name, 'r') as f:
-            html_content = f.read()
-        assert 'Server Error' in html_content
+    r = requests.get(resp.location, allow_redirects=True)
+    assert 'Server Error' in str(r.content)
