@@ -54,12 +54,13 @@ def response_404(start_response, details):
 
 
 class RasterServer(object):
-    '''Does dynamic (non-filebased) configuration, for serving rasters'''
+    """Does dynamic (non-filebased) configuration, for serving rasters"""
+
     def __init__(self, dsn, config=config):
         """Initialize the application
 
-           :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
-           :type config: dict
+        :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
+        :type config: dict
         """
         self._config = config
         self.dsn = dsn
@@ -69,8 +70,8 @@ class RasterServer(object):
         return self._config
 
     def __call__(self, environ, start_response):
-        '''Makes catalog requests, but defers to OPeNDAP Request
-        Compiler Application (ORCA) for data requests'''
+        """Makes catalog requests, but defers to OPeNDAP Request
+        Compiler Application (ORCA) for data requests"""
 
         req = Request(environ)
 
@@ -87,9 +88,10 @@ class RasterServer(object):
             return res(environ, start_response)
 
         else:
-            orca_url = build_orca_url(self.config['handlers'], self.config['thredds_root'], req)
+            orca_url = build_orca_url(
+                self.config["handlers"], self.config["thredds_root"], req
+            )
             return Response(status_code=301, location=orca_url)
-
 
 
 class RasterCatalog(RasterServer):
@@ -237,21 +239,22 @@ class RasterMetadata(object):
 
 
 def build_orca_url(handlers, thredds_root, req):
-    '''orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
+    """orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
     to THREDDS into bite-sized chunks and then reasemmbles them for the user.
 
     Orca is available through a url with the format:
     [thredds_root]/[filepath]:[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
 
     where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
-    '''
+    """
     filename = None
     for handler in handlers:
-        if handler['url'] == req.path_info[:-3]:
-            filename = handler['file']
+        if handler["url"] == req.path_info[:-3]:
+            filename = handler["file"]
             break
 
-    return thredds_root + '/' + filename + ':' + req.query_string[:-1]
+    return thredds_root + "/" + filename + ":" + req.query_string[:-1]
+
 
 def db_raster_catalog(session, ensemble, root_url):
     """A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
