@@ -1,7 +1,12 @@
 import os
 from os.path import basename
 
+<<<<<<< HEAD
 from pydap.wsgi.app import DapServer
+=======
+from tempfile import NamedTemporaryFile
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+>>>>>>> master
 from pdp_util import session_scope
 from modelmeta import DataFile, DataFileVariable, EnsembleDataFileVariables, Ensemble, VariableAlias
 
@@ -23,13 +28,15 @@ config = {'name': 'testing-server',
           }
 
 
-class RasterServer(DapServer):
-    '''WSGI app which is a subclass of PyDap's DapServer to do dynamic (non-filebased) configuration, for serving rasters'''
+class RasterServer(object):
+    """Does dynamic (non-filebased) configuration, for serving rasters"""
+
     def __init__(self, dsn, config=config):
-        '''Initialize the application
-           :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
-           :type config: dict
-        '''
+        """Initialize the application
+
+        :param config: A config dict that can be read by :py:func:`yaml.load` and includes the key `handlers`. `handlers` must be a list of dicts each containing the keys: `url` and `file`.
+        :type config: dict
+        """
         self._config = config
         self.dsn = dsn
 
@@ -38,7 +45,9 @@ class RasterServer(DapServer):
         return self._config
 
     def __call__(self, environ, start_response):
-        '''An override of Pydap's __call__ which overrides catalog requests, but defers to pydap for data requests'''
+        """Makes catalog requests, but defers to OPeNDAP Request
+        Compiler Application (ORCA) for data requests"""
+
         req = Request(environ)
 
         if req.path_info == '/catalog.json':
@@ -49,8 +58,12 @@ class RasterServer(DapServer):
                     content_type='application/json',
                     charset='utf-8')
             return res(environ, start_response)
+
         else:
-            return super(RasterServer, self).__call__(environ, start_response)
+            orca_url = build_orca_url(
+                self.config["handlers"], self.config["thredds_root"], req
+            )
+            return Response(status_code=301, location=orca_url)
 
 class RasterCatalog(RasterServer):
     '''WSGI app which is a subclass of RasterServer.  Filters the urls on call to permit only MetaData requests'''
@@ -192,6 +205,24 @@ class RasterMetadata(object):
 
         start_response('200 OK', [('Content-type','application/json; charset=utf-8')])
         return dumps(d)
+
+def build_orca_url(handlers, thredds_root, req):
+    """orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
+    to THREDDS into bite-sized chunks and then reasemmbles them for the user.
+
+    Orca is available through a url with the format:
+    [thredds_root]/[filepath]:[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
+
+    where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
+    """
+    filename = None
+    for handler in handlers:
+        if handler["url"] == req.path_info[:-3]:
+            filename = handler["file"]
+            break
+
+    return f"{thredds_root}/{filename}:{req.query_string[:-1]}"
+
 
 def db_raster_catalog(session, ensemble, root_url):
     '''A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.

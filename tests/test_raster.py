@@ -4,6 +4,13 @@ import json
 import pytest
 from webob.request import Request
 
+import pytest
+import requests
+from urllib.request import urlretrieve
+from tempfile import NamedTemporaryFile
+from webob.response import Response
+from netCDF4 import Dataset
+
 @pytest.fixture(scope="function")
 def config():
     return {'ensemble': 'bc_prism', 'root_url': 'http://basalt.pcic.uvic.ca:8080/data/'}
@@ -95,3 +102,86 @@ def test_raster_metadata_minmax_bad_id(raster_metadata):
     req = Request.blank('?request=GetMinMax&id=NOT_A_VALID_ID&var=tasmax')
     resp = req.get_response(raster_metadata)
     assert resp.status == '404 Not Found'
+
+
+@pytest.mark.online
+@pytest.mark.parametrize(
+    ("environ", "var"),
+    [
+        (
+            {
+                "PATH_INFO": "tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.nc",
+                "QUERY_STRING": "tasmin[0:150][0:91][0:206]&",
+            },
+            "tasmin",
+        ),
+        (
+            {
+                "PATH_INFO": "pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc.nc",
+                "QUERY_STRING": "pr[0:500][91:91][206:206]&",
+            },
+            "pr",
+        ),
+    ],
+)
+@pytest.mark.online
+@pytest.mark.parametrize(
+    ("config"),
+    [
+        {
+            "root_url": "http://tools.pacificclimate.org/dataportal/data/vic_gen1/",
+            "handlers": [
+                {
+                    "url": "tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc",
+                    "file": "/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/tasmin_day_BCCAQv2+ANUSPLIN300_inmcm4_historical+rcp85_r1i1p1_19500101-21001231.nc",
+                },
+                {
+                    "url": "pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc",
+                    "file": "/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc",
+                },
+            ],
+            "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+        }
+    ],
+)
+def test_RasterServer_orca(mm_database_dsn, config, environ, var):
+    r_server = RasterServer(mm_database_dsn, config)
+    resp = r_server(environ, Response())
+
+    assert resp.status_code == 301
+
+    r = requests.get(resp.location, allow_redirects=True)
+    with NamedTemporaryFile(suffix=".nc", dir="/tmp") as tmp_file:
+        urlretrieve(r.url, tmp_file.name)
+        data = Dataset(tmp_file.name)
+        assert "time" in data.dimensions
+        assert "lat" in data.dimensions
+        assert "lon" in data.dimensions
+        assert var in data.variables
+
+
+@pytest.mark.online
+@pytest.mark.parametrize(
+    ("environ", "config"),
+    [
+        (
+            {
+                "PATH_INFO": "bad_path.nc.nc",
+                "QUERY_STRING": "tasmin[0:150][0:91][0:206]&",
+            },
+            {
+                "root_url": "http://tools.pacificclimate.org/dataportal/data/vic_gen1/",
+                "handlers": [
+                    {"url": "bad_path.nc", "file": "bad_file.nc"},
+                ],
+                "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+            },
+        )
+    ],
+)
+def test_RasterServer_orca_error(mm_database_dsn, config, environ):
+    r_server = RasterServer(mm_database_dsn, config)
+    resp = r_server(environ, Response())
+
+    r = requests.get(resp.location, allow_redirects=True)
+    assert "Server Error" in str(r.content)
