@@ -413,13 +413,16 @@ def test_wsgi_app():
 
 ## Raster fixtures
 
+
 @pytest.fixture(scope="function")
 def raster_metadata():
     return RasterMetadata(modelmeta.test_dsn)
 
+
 @pytest.fixture(scope="function")
 def mm_session():
     return modelmeta.test_session()
+
 
 @pytest.fixture(scope="function")
 def mm_dsn():
@@ -427,6 +430,7 @@ def mm_dsn():
 
 
 ## ensemble fixtures
+
 
 @pytest.fixture(scope="function")
 def ensemble_member_lister():
