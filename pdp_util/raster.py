@@ -253,7 +253,7 @@ def build_orca_url(handlers, thredds_root, req):
             filename = handler["file"]
             break
 
-    return thredds_root + "/" + filename + ":" + req.query_string[:-1]
+    return f"{thredds_root}/{filename}:{req.query_string[:-1]}"
 
 
 def db_raster_catalog(session, ensemble, root_url):
