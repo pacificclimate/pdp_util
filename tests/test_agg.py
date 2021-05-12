@@ -20,7 +20,12 @@ from pdp_util.agg import (
 import pytest
 import pydap_extras
 
-stns = [("ARDA", "115084"), ("EC_raw", "1046332"), ("FLNRO-WMB", "369")]
+stns = [
+    ("ARDA", "115084"),
+    ("ARDA", "112073"),
+    ("EC_raw", "1046332"),
+    ("FLNRO-WMB", "369"),
+]
 
 
 def test_can_instantiate(test_session, conn_params):
@@ -46,16 +51,14 @@ def test_metadata_index_responder(test_session):
 @pytest.mark.parametrize(
     "stations, expected_filenames",
     [
-        ([], set()),
+        ([], []),
         (
             stns,
-            set(
-                [
-                    "ARDA/variables.csv",
-                    "EC_raw/variables.csv",
-                    "FLNRO-WMB/variables.csv",
-                ]
-            ),
+            [
+                "ARDA/variables.csv",
+                "EC_raw/variables.csv",
+                "FLNRO-WMB/variables.csv",
+            ],
         ),
     ],
 )
@@ -74,7 +77,7 @@ def test_get_all_metadata_index_responders(
     )
 
     resp = get_all_metadata_index_responders(test_session, stations, False)
-    filenames = set([filename for filename, content in resp])
+    filenames = [filename for filename, content in resp]
     assert filenames == expected_filenames
 
 
