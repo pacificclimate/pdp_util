@@ -3,6 +3,7 @@ from datetime import datetime
 from random import random
 from tempfile import NamedTemporaryFile
 from zipfile import ZipFile
+from collections import Counter
 
 from webob.request import Request
 
@@ -51,14 +52,19 @@ def test_metadata_index_responder(test_session):
 @pytest.mark.parametrize(
     "stations, expected_filenames",
     [
-        ([], []),
+        ([], Counter([])),
         (
             stns,
-            [
-                "ARDA/variables.csv",
-                "EC_raw/variables.csv",
-                "FLNRO-WMB/variables.csv",
-            ],
+            # Use a Counter for testing instead of a set here because
+            # we want to ensure that duplicates do *not* get collapsed
+            # for the purposes of the test
+            Counter(
+                [
+                    "ARDA/variables.csv",
+                    "EC_raw/variables.csv",
+                    "FLNRO-WMB/variables.csv",
+                ]
+            ),
         ),
     ],
 )
@@ -77,7 +83,7 @@ def test_get_all_metadata_index_responders(
     )
 
     resp = get_all_metadata_index_responders(test_session, stations, False)
-    filenames = [filename for filename, content in resp]
+    filenames = Counter([filename for filename, content in resp])
     assert filenames == expected_filenames
 
 
