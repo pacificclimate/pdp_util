@@ -3,6 +3,7 @@ from datetime import datetime
 from random import random
 from tempfile import NamedTemporaryFile
 from zipfile import ZipFile
+from collections import Counter
 
 from webob.request import Request
 
@@ -18,7 +19,12 @@ import pydap.handlers.pcic
 
 import pytest
 
-stns = [("ARDA", "115084"), ("EC_raw", "1046332"), ("FLNRO-WMB", "369")]
+stns = [
+    ("ARDA", "115084"),
+    ("ARDA", "112073"),
+    ("EC_raw", "1046332"),
+    ("FLNRO-WMB", "369"),
+]
 
 
 def test_can_instantiate(test_session, conn_params):
@@ -44,10 +50,13 @@ def test_metadata_index_responder(test_session):
 @pytest.mark.parametrize(
     "stations, expected_filenames",
     [
-        ([], set()),
+        ([], Counter([])),
         (
             stns,
-            set(
+            # Use a Counter for testing instead of a set here because
+            # we want to ensure that duplicates do *not* get collapsed
+            # for the purposes of the test
+            Counter(
                 [
                     "ARDA/variables.csv",
                     "EC_raw/variables.csv",
@@ -72,7 +81,7 @@ def test_get_all_metadata_index_responders(
     )
 
     resp = get_all_metadata_index_responders(test_session, stations, False)
-    filenames = set([filename for filename, content in resp])
+    filenames = Counter([filename for filename, content in resp])
     assert filenames == expected_filenames
 
 
@@ -85,9 +94,15 @@ def test_get_pcds_responders(conn_params, monkeypatch):
     now = datetime.now()
     response = get_pcds_responders(conn_params, stns, "csv", (now, now), {})
 
-    expected_names = ["ARDA/115084.csv", "EC_raw/1046332.csv", "FLNRO-WMB/369.csv"]
+    expected_names = [
+        "ARDA/115084.csv",
+        "ARDA/112073.csv",
+        "EC_raw/1046332.csv",
+        "FLNRO-WMB/369.csv",
+    ]
     expected_paths = [
         "/ARDA/115084.rsql.csv",
+        "/ARDA/112073.rsql.csv",
         "/EC_raw/1046332.rsql.csv",
         "/FLNRO-WMB/369.rsql.csv",
     ]

@@ -101,8 +101,8 @@ def get_all_metadata_index_responders(sesh, stations, climo=False):
     :type climo: bool
     :rtype: iterator
     """
-    for station in stations:
-        network_name = station[0]
+    networks = {network_name for network_name, native_id in stations}
+    for network_name in networks:
         filename = "{0}/variables.csv".format(network_name)
         yield (filename, metadata_index_responder(sesh, network_name, climo))
 
