@@ -17,9 +17,19 @@ from pdp_util.counts import CountStationsApp, CountRecordLengthApp
         ({"input-freq": "1-hourly"}, 6),
         ({"only-with-climatology": "only-with-climatology"}, 14),
         # We _should_ ignore a bad value for a filter (or return a HTTP BadRequest?)
-        ({"only-with-climatology": "bad-value"}, 50)
-        # Omit this case until we get the geoalchemy stuff figured out
-        # ({'input-polygon': 'POLYGON((-123.240336 50.074796,-122.443323 49.762922,-121.992837 49.416394,-122.235407 48.654034,-123.725474 48.792645,-123.864085 49.728269,-123.240336 50.074796))'}, 7),
+        ({"only-with-climatology": "bad-value"}, 50),
+        (
+            {
+                "input-polygon": "POLYGON ((-123.240336 50.074796,-122.443323 49.762922,-121.992837 49.416394,-122.235407 48.654034,-123.725474 48.792645,-123.864085 49.728269,-123.240336 50.074796))"
+            },
+            4,
+        ),
+        (
+            {
+                "input-polygon": "MULTIPOLYGON (((-123.240336 50.074796,-122.443323 49.762922,-121.992837 49.416394,-122.235407 48.654034,-123.725474 48.792645,-123.864085 49.728269,-123.240336 50.074796)))"
+            },
+            4,
+        ),
     ],
 )
 def test_count_stations_app(test_session, filters, expected):

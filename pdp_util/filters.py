@@ -10,6 +10,15 @@ from pycds import CrmpNetworkGeoserver as cng
 from sqlalchemy.sql.functions import GenericFunction
 from sqlalchemy.types import String
 from sqlalchemy.dialects import postgresql
+from geoalchemy2.functions import ST_GeomFromText, ST_Intersects
+
+import pdb
+
+
+def intersects(x):
+    geo = ST_GeomFromText(x, 4326)
+    return ST_Intersects(geo, cng.the_geom)
+
 
 # Register the PostgreSQL function `regexp_split_to_array`, with explicit
 # typing with postresql.ARRAY. This allows use of PostgreSQL specific operator
@@ -59,7 +68,7 @@ class FormFilter(namedtuple("FormFilter", "input_name regex sql_constraint")):
             return (
                 self.sql_constraint(value)
                 if callable(self.sql_constraint)
-                else self.sql_constraint % value
+                else text(self.sql_constraint % value)
             )
         else:
             return None
@@ -77,9 +86,12 @@ def mk_mp_regex():
     point = "%(decimal)s %(decimal)s" % locals()
     inner = r"\(%(point)s(, ?%(point)s){2,}\)" % locals()
     outer = inner
-    polygon = r"\(%(outer)s(, ?%(inner)s)?\)" % locals()
-    multipolygon = r"MULTIPOLYGON ?\(%(polygon)s(, ?%(polygon)s)*\)" % locals()
-    return multipolygon
+    single_polygon = r"\(%(outer)s(, ?%(inner)s)?\)" % locals()
+    multipolygon = (
+        r"MULTIPOLYGON ?\(%(single_polygon)s(, ?%(single_polygon)s)*\)" % locals()
+    )
+    polygon = r"POLYGON %(single_polygon)s" % locals()
+    return r"(%(polygon)s|%(multipolygon)s)" % locals()
 
 
 form_filters = {
@@ -157,11 +169,7 @@ form_filters = {
         # oriented API.
         lambda x: len(x) == 0 or cng.freq.in_(x.split(",")),
     ),
-    "input-polygon": FormFilter(
-        "input-polygon",
-        mk_mp_regex(),
-        "ST_intersects(ST_GeomFromText('%s', 4326), the_geom)",
-    ),
+    "input-polygon": FormFilter("input-polygon", mk_mp_regex(), intersects),
     "only-with-climatology": FormFilter(
         "only-with-climatology",
         "only-with-climatology",
