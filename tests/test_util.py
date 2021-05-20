@@ -18,7 +18,7 @@ def test_get_stn_list(test_session):
     ("constraints", "to_select", "expected"),
     [
         (
-            [text("network_name = 'EC_raw'")],
+            [cng.network_name == "EC_raw"],
             cng.native_id,
             ["1046332", "1126150", "1106200"],
         ),

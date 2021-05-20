@@ -4,7 +4,7 @@ from webob.request import Request
 
 from pdp_util.filters import form_filters
 from pydap.responses.lib import load_responses
-from pycds import CrmpNetworkGeoserver as cng
+from pycds import Network, Station, CrmpNetworkGeoserver as cng
 
 
 def get_stn_list(sesh, sql_constraints, to_select=[cng.network_name, cng.native_id]):
@@ -18,9 +18,10 @@ def get_stn_list(sesh, sql_constraints, to_select=[cng.network_name, cng.native_
     # to_select must be a list
     if not hasattr(to_select, "__len__"):
         to_select = [to_select]
-    q = sesh.query(*to_select)
+    q = sesh.query(*to_select).join(Station).join(Network)
     for constraint in sql_constraints:
         q = q.filter(constraint)
+    q = q.filter(Network.publish == True)
 
     return q.all()
 
