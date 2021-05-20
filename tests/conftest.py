@@ -73,6 +73,28 @@ def test_session(empty_session):
 
 
 @pytest.fixture(scope="function")
+def test_session_with_unpublished(test_session):
+    unpub = pycds.Network(id=999, name='MoSecret', publish=False)
+    stns = [
+        pycds.Station(
+            native_id='does not matter', network=unpub,
+                histories=[
+                    pycds.History(
+                        station_name='Does Not Matter',
+                        the_geom='SRID=4326;POINT(-140.866667 62.416667)'
+#                        the_geom=Geometry(-140.866667 62.416667
+                    )
+                ]
+        )
+    ]
+    test_session.begin_nested()
+    test_session.add_all(stns + [unpub])
+    test_session.commit()
+    yield test_session
+    test_session.rollback()
+
+
+@pytest.fixture(scope="function")
 def conn_params(test_session):
     yield test_session.get_bind().url
 
