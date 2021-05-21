@@ -35,6 +35,7 @@ def engine():
         engine = create_engine(pg.url())
         engine.execute("create extension postgis")
         engine.execute(CreateSchema("crmp"))
+        engine.execute("SET search_path TO crmp, public")
         pycds.Base.metadata.create_all(bind=engine)
         yield engine
 
@@ -52,7 +53,14 @@ def empty_session(engine):
     session.close()
 
 
-@pytest.fixture(scope="session")
+# Ideally we could leave this as scope="session" (because it's much
+# faster!), but something in the SQL that gets executed below messes
+# up the search path such that SQLALchemy can't find any of the
+# PostGIS fuctions. As an demonstration of this behaviour, the
+# test_geo.py:test_that_I_can_use_PostGIS function will pass when run
+# independently, but will fail if run in the suite where test_session
+# is declared with session scope.
+@pytest.fixture(scope="function")
 def test_session(empty_session):
     logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
 
@@ -72,8 +80,7 @@ def test_session(empty_session):
     empty_session.close()
 
 
-@pytest.fixture(scope="function")
-def test_session_with_unpublished(test_session):
+def create_unpublished_network(executor):
     unpub = pycds.Network(id=999, name='MoSecret', publish=False)
     stns = [
         pycds.Station(
@@ -82,16 +89,21 @@ def test_session_with_unpublished(test_session):
                     pycds.History(
                         station_name='Does Not Matter',
                         the_geom='SRID=4326;POINT(-140.866667 62.416667)'
-#                        the_geom=Geometry(-140.866667 62.416667
                     )
                 ]
         )
     ]
-    test_session.begin_nested()
-    test_session.add_all(stns + [unpub])
-    test_session.commit()
-    yield test_session
-    test_session.rollback()
+    executor.add_all(stns + [unpub])
+    executor.commit()
+
+
+@pytest.fixture(scope="function")
+def test_session_with_unpublished(empty_session):
+    empty_session.begin_nested()
+    create_unpublished_network(empty_session)
+    yield empty_session
+    empty_session.rollback()
+    empty_session.close()
 
 
 @pytest.fixture(scope="function")
