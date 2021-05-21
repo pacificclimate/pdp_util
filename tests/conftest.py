@@ -81,16 +81,17 @@ def test_session(empty_session):
 
 
 def create_unpublished_network(executor):
-    unpub = pycds.Network(id=999, name='MoSecret', publish=False)
+    unpub = pycds.Network(id=999, name="MoSecret", publish=False)
     stns = [
         pycds.Station(
-            native_id='does not matter', network=unpub,
-                histories=[
-                    pycds.History(
-                        station_name='Does Not Matter',
-                        the_geom='SRID=4326;POINT(-140.866667 62.416667)'
-                    )
-                ]
+            native_id="does not matter",
+            network=unpub,
+            histories=[
+                pycds.History(
+                    station_name="Does Not Matter",
+                    the_geom="SRID=4326;POINT(-140.866667 62.416667)",
+                )
+            ],
         )
     ]
     executor.add_all(stns + [unpub])

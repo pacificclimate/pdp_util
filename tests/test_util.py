@@ -109,5 +109,5 @@ def test_get_extension_bad():
 
 def test_unpublished(test_session_with_unpublished):
     sesh = test_session_with_unpublished
-    stns = get_stn_list(sesh, [Network.name == 'MoSecret'])
+    stns = get_stn_list(sesh, [Network.name == "MoSecret"])
     assert len(stns) == 0
