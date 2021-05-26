@@ -1,7 +1,7 @@
 from urllib.parse import urlencode
 from datetime import datetime
 
-from pycds import CrmpNetworkGeoserver as cng
+from pycds import Network, CrmpNetworkGeoserver as cng
 from pdp_util.util import get_stn_list, get_clip_dates, get_extension
 
 import pytest
@@ -18,7 +18,7 @@ def test_get_stn_list(test_session):
     ("constraints", "to_select", "expected"),
     [
         (
-            [text("network_name = 'EC_raw'")],
+            [cng.network_name == "EC_raw"],
             cng.native_id,
             ["1046332", "1126150", "1106200"],
         ),
@@ -105,3 +105,9 @@ def test_get_extension_bad():
     # data-format not in the request params
     req = Request.blank("")
     assert get_extension(req.environ) == None
+
+
+def test_unpublished(test_session_with_unpublished):
+    sesh = test_session_with_unpublished
+    stns = get_stn_list(sesh, [Network.name == "MoSecret"])
+    assert len(stns) == 0
