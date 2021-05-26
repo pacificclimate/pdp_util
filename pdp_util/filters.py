@@ -16,7 +16,6 @@ import pdb
 
 
 def intersects(x):
-    pdb.set_trace()
     geo = ST_GeomFromText(x, 4326)
     return ST_Intersects(geo, cng.the_geom)
 
@@ -90,7 +89,7 @@ def mk_mp_regex():
     single_polygon = r"\(%(outer)s(, ?%(inner)s)?\)" % locals()
     multipolygon = r"MULTIPOLYGON ?\(%(single_polygon)s(, ?%(single_polygon)s)*\)" % locals()
     polygon = r"POLYGON %(single_polygon)s" % locals()
-    return r"(%(single_polygon)s|%(multipolygon)s)" % locals()
+    return r"(%(polygon)s|%(multipolygon)s)" % locals()
 
 
 form_filters = {
