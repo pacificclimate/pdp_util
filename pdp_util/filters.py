@@ -87,7 +87,9 @@ def mk_mp_regex():
     inner = r"\(%(point)s(, ?%(point)s){2,}\)" % locals()
     outer = inner
     single_polygon = r"\(%(outer)s(, ?%(inner)s)?\)" % locals()
-    multipolygon = r"MULTIPOLYGON ?\(%(single_polygon)s(, ?%(single_polygon)s)*\)" % locals()
+    multipolygon = (
+        r"MULTIPOLYGON ?\(%(single_polygon)s(, ?%(single_polygon)s)*\)" % locals()
+    )
     polygon = r"POLYGON %(single_polygon)s" % locals()
     return r"(%(polygon)s|%(multipolygon)s)" % locals()
 
@@ -167,11 +169,7 @@ form_filters = {
         # oriented API.
         lambda x: len(x) == 0 or cng.freq.in_(x.split(",")),
     ),
-    "input-polygon": FormFilter(
-        "input-polygon",
-        mk_mp_regex(),
-        intersects
-    ),
+    "input-polygon": FormFilter("input-polygon", mk_mp_regex(), intersects),
     "only-with-climatology": FormFilter(
         "only-with-climatology",
         "only-with-climatology",
