@@ -74,6 +74,7 @@ def test_session(empty_session):
         logging.INFO
     )  # Let's not log all the db setup stuff...
 
+    empty_session.execute("SET search_path TO crmp, public")
     yield empty_session
 
     empty_session.rollback()
