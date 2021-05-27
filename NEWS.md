@@ -1,5 +1,19 @@
 # News / Release Notes
 
+## 1.2.0
+
+*Release Date: 2021-May-27*
+
+*NOTE: this release is a Python 2 release (hopefully the last) with
+several bugfixes backported from the main development branch*
+
+- Fixes a bug in the code that adds multiple files to the /agg
+  response's zip file with the same name.
+- Adds a filter to the PCDS backend that ensures only stations from a
+  network with a truthy "publish" flag will be returned.
+- Adds support for single POLYGON filters in the PCDS portal [GH Issue
+  32](https://github.com/pacificclimate/pdp_util/issues/32)
+
 ## 1.1.0
 
 *Release Date: 2021-Jan-14*

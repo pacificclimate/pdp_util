@@ -14,7 +14,7 @@ class PyTest(TestCommand):
         errno = pytest.main(self.test_args)
         sys.exit(errno)                                                                        
 
-__version__ = (1, 1, 0)
+__version__ = (1, 2, 0)
 
 setup(
     name="pdp_util",
