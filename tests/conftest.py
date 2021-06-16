@@ -321,13 +321,14 @@ def grids():
 
 @pytest.fixture(scope="function")
 def dfv_dsg_tss(data_files, variable_aliases, grids):
+    grid = grids[0]
     return make(
         make_dfv_gridded,
         [
-            (data_files[0], variable_aliases[0], grids[0]),  # var 0, uid 0
-            (data_files[0], variable_aliases[1], grids[0]),  # var 1, uid 0
-            (data_files[1], variable_aliases[1], grids[0]),  # var 2, uid 1
-            (data_files[2], variable_aliases[1], grids[0]),  # var 3, uid 2
+            (data_files[0], variable_aliases[0], grid),  # var 0, uid 0
+            (data_files[0], variable_aliases[1], grid),  # var 1, uid 0
+            (data_files[1], variable_aliases[1], grid),  # var 2, uid 1
+            (data_files[2], variable_aliases[1], grid),  # var 3, uid 2
         ],
     )
 
