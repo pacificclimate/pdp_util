@@ -1,5 +1,15 @@
 # News / Release Notes
 
+## 1.2.1
+
+*Release Date: 2021-Jun-14*
+
+Release for integration test with `pdp`. 
+
+- Fixes DataFileVariable queries for modelmeta >=0.3.0
+- Fixes Python CI build
+
+
 ## 1.2.0
 
 *Release Date: 2021-May-27*
