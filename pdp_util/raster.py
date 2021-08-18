@@ -6,7 +6,7 @@ from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from pdp_util import session_scope
 from modelmeta import (
     DataFile,
-    DataFileVariableDSGTimeSeries,
+    DataFileVariableGridded,
     EnsembleDataFileVariables,
     Ensemble,
     VariableAlias,
@@ -196,8 +196,8 @@ class RasterMetadata(object):
 
         # Default content
         columns = (
-            DataFileVariableDSGTimeSeries.range_min.label("min"),
-            DataFileVariableDSGTimeSeries.range_max.label("max"),
+            DataFileVariableGridded.range_min.label("min"),
+            DataFileVariableGridded.range_max.label("max"),
         )
         joins = (DataFile,)
 
@@ -214,7 +214,7 @@ class RasterMetadata(object):
             q = (
                 sesh.query(*columns)
                 .filter(DataFile.unique_id == unique_id)
-                .filter(DataFileVariableDSGTimeSeries.netcdf_variable_name == var)
+                .filter(DataFileVariableGridded.netcdf_variable_name == var)
             )
             for Table in joins:
                 q = q.join(Table)
@@ -299,7 +299,7 @@ def db_raster_configurator(session, name, version, api_version, ensemble, root_u
 def ensemble_files(session, ensemble_name):
     q = (
         session.query(DataFile)
-        .join(DataFileVariableDSGTimeSeries)
+        .join(DataFileVariableGridded)
         .join(EnsembleDataFileVariables)
         .join(Ensemble)
         .filter(Ensemble.name == ensemble_name)

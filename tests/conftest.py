@@ -13,8 +13,9 @@ from modelmeta import (
     Model,
     Emission,
     Run,
+    Grid,
     DataFile,
-    DataFileVariableDSGTimeSeries,
+    DataFileVariableGridded,
     VariableAlias,
     Ensemble,
 )
@@ -218,8 +219,23 @@ def make_variable_alias(i):
     )
 
 
-def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
-    return DataFileVariableDSGTimeSeries(
+def make_grid(i):
+    return Grid(
+        name="Grid {}".format(i),
+        evenly_spaced_y=True,
+        xc_count=99,
+        xc_grid_step=99,
+        xc_origin=99,
+        xc_units="furlong",
+        yc_count=99,
+        yc_grid_step=99,
+        yc_origin=99,
+        yc_units="furlong",
+    )
+
+
+def make_dfv_gridded(i, file=None, variable_alias=None, grid=None):
+    return DataFileVariableGridded(
         derivation_method=f"derivation_method_{i}",
         variable_cell_methods=f"variable_cell_methods_{i}",
         netcdf_variable_name=f"var_{i}",
@@ -228,6 +244,7 @@ def make_dfv_dsg_time_series(i, file=None, variable_alias=None):
         range_max=100,
         file=file,
         variable_alias=variable_alias,
+        grid=grid,
     )
 
 
@@ -298,14 +315,20 @@ def variable_aliases():
 
 
 @pytest.fixture(scope="function")
-def dfv_dsg_tss(data_files, variable_aliases):
+def grids():
+    return make(make_grid, 1)
+
+
+@pytest.fixture(scope="function")
+def dfv_dsg_tss(data_files, variable_aliases, grids):
+    grid = grids[0]
     return make(
-        make_dfv_dsg_time_series,
+        make_dfv_gridded,
         [
-            (data_files[0], variable_aliases[0]),  # var 0, uid 0
-            (data_files[0], variable_aliases[1]),  # var 1, uid 0
-            (data_files[1], variable_aliases[1]),  # var 2, uid 1
-            (data_files[2], variable_aliases[1]),  # var 3, uid 2
+            (data_files[0], variable_aliases[0], grid),  # var 0, uid 0
+            (data_files[0], variable_aliases[1], grid),  # var 1, uid 0
+            (data_files[1], variable_aliases[1], grid),  # var 2, uid 1
+            (data_files[2], variable_aliases[1], grid),  # var 3, uid 2
         ],
     )
 
