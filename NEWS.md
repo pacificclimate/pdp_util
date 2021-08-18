@@ -1,5 +1,15 @@
 # News / Release Notes
 
+## 2.1.0
+
+*Release Date: 2021-Aug-18*
+
+- [Support most recent database schema](https://github.com/pacificclimate/pdp_util/pull/37)
+- [Supporting filtering on single polygons in the PCDS portal](https://github.com/pacificclimate/pdp_util/commit/ec4689d05f80df4719e96d91c543dbb0126f492d)
+- [Take a networks "publish" flag into account when filtering data in the PCDS portal](https://github.com/pacificclimate/pdp_util/commit/53eca28b59cb9b22205bed02a3299a9fde948032)
+- [Fix a bug that allowed multiple copies of the same network file in a downloaded zipfile in the PCDS portal](https://github.com/pacificclimate/pdp_util/commit/7ed607c6ebb09651e521c6fb3419bfa5420b7df1)
+- [Integrate Orca for filling some backend requests](https://github.com/pacificclimate/pdp_util/pull/29)
+
 ## 2.0.0
 
 *Release Date: 2021-April-27*
