@@ -19,7 +19,6 @@ jobs:
     - name: Install pipenv
       run: |
         pip install -U pipenv
-
     - id: cache-pipenv
       uses: actions/cache@v2
       with:
@@ -33,12 +32,15 @@ jobs:
         sudo apt-get update
         sudo apt purge postgresql-client-13 postgresql-server-dev-all
         sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev postgresql-12-postgis-3
-
-    - name: Install dependencies if changed
-      if: steps.cache-pipenv.output.cache-hit != 'true'
+    - name: Install dependencies from lockfile for python 3.8
+      if: steps.cache-pipenv.output.cache-hit != 'true' && ${{ matrix.python-version == '3.8' }}
       run: |
-        pipenv install --deploy --dev
-
+        pipenv install --dev
+    - name: Install dependencies for python != 3.8
+      if: ${{ matrix.python-version != '3.8' }}
+      run: |
+        mv Pipfile.lock do-not-use
+        pipenv install --python ${{ matrix.python-version }} --dev
     - name: Test with pytest (full)
       if: github.ref == 'refs/heads/master'
       run: |
