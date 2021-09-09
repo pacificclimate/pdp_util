@@ -57,6 +57,8 @@ Some useful pipenv commands:
 * `pipenv shell` - load the virtual environment in the current terminal
 * `exit` - exit the virtual environment. Don't use `deactivate` as you would for a regular python environment, it does not completely exit the `pipenv` environment, which can lead to some very confusing behaviour
 
+Addition pipenv documentation is available `here <https://pipenv.pypa.io/en/latest/>`_. 
+
 .. rubric:: Footnotes
 
 .. [#pcds] Provincial Climate Data Set
