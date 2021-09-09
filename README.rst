@@ -44,8 +44,23 @@ the desired environment for testing. This is done in two ways:
 * In the Docker image `pcic/pdp_util-local-pytest`, which can be run locally in interactive mode to provide
   a persistent environment for running tests. For details, its [README](docker/local-pytest/README.md).
 
+Local Install for Development
+-----------------------------
+
+If your workstation has GDAL 3, postgresql, and python 3 and you are on the PCIC VPN, this package can be installed in a virtual environment via `pipenv` and configured to connect to the replicated database at db3.pcic.uvic.ca via setting the `DSN` and `PCDS_DSN` environment variables (passwords are available in Team Password Manager). This provides a fairly low-overhead way to run tests. If any of those factors are missing, testing in a docker container, as described above, is your best bet.
+
+Some useful pipenv commands:
+* `pipenv install` - installs the package and sets up a virtual environment
+* `pipenv run pytest` - runs pytest, or any other desired command, in the virtual environment in which the package has been installed
+* `pipenv graph` - see a dependency tree
+* `pipenv install XXX==1.2.3` / `pipenv uninstall XXX` - add or remove a dependency
+* `pipenv shell` - load the virtual environment in the current terminal
+* `exit` - exit the virtual environment. Don't use `deactivate` as you would for a regular python environment, it does not completely exit the `pipenv` environment, which can lead to some very confusing behaviour
+
+Addition pipenv documentation is available `here <https://pipenv.pypa.io/en/latest/>`_. 
 
 .. rubric:: Footnotes
 
 .. [#pcds] Provincial Climate Data Set
 .. [#non-pcic] Please note, that I can't imagine this package being useful to anyone other than PCIC (aside from the case where someone wants to understand how we run our application). However, if it does happen to be so, you are welcome to use it under the terms outlined in the LICENSE.txt file.
+
