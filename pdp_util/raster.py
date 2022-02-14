@@ -73,6 +73,9 @@ class RasterServer(object):
         """Makes catalog requests, but defers to OPeNDAP Request
         Compiler Application (ORCA) for data requests"""
 
+        print("RasterServer.__call__ made")
+        print(environ)
+        print("end environ")
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
@@ -86,11 +89,19 @@ class RasterServer(object):
                 charset="utf-8",
             )
             return res(environ, start_response)
-
+        elif req.path_info.split(".")[-1] == "das":
+            das_url = build_das_url(self.config["handlers"], self.config["thredds_root"], req)
+            print("generat das url {}".format(das_url))
+            return Response(status_code=301, location=das_url)
+        elif req.path_info.split(".")[-1] == "dds":
+            dds_url = build_dds_url(self.config["handlers"], self.config["thredds_root"], req)
+            print("generated dds url {}".format(dds_url))
+            return Response(status_code=301, location=dds_url)
         else:
             orca_url = build_orca_url(
                 self.config["handlers"], self.config["thredds_root"], req
             )
+            print("orca_url is {}".format(orca_url))
             return Response(status_code=301, location=orca_url)
 
 
@@ -99,11 +110,13 @@ class RasterCatalog(RasterServer):
 
     def __call__(self, environ, start_response):
         """An override of RasterServer's __call__ which allows only MetaData requests"""
+        print("in RasterCatalog.__call__")
         req = Request(environ)
         if req.path_info in ["/", "/catalog.json"]:
             environ["PATH_INFO"] = "/catalog.json"
             return super(RasterCatalog, self).__call__(environ, start_response)
         elif req.path_info.split(".")[-1] in ["das", "dds"]:
+            print("das or dds call made")
             return super(RasterCatalog, self).__call__(environ, start_response)
         else:
             return response_404(
@@ -247,15 +260,61 @@ def build_orca_url(handlers, thredds_root, req):
 
     where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
     """
+    print("in build_orca_url")
+    print("req is")
+    print(req.__dict__)
+    print("end req")
     filename = None
     for handler in handlers:
-        if handler["url"] == req.path_info[:-3]:
+        #print("handler url: {} path_info: {}".format(handler["url"], req.path_info[:-3]))
+        if handler["url"] == req.path_info[:-3]: 
+            print("filename match default")
             filename = handler["file"]
             break
+        elif handler["url"] == req.path_info[:-3].strip('/.'):
+            print("filename match stripped")
+            filename = handler["file"].strip('/,')
+            break
 
+    print("req.query_string is {}".format(req.query_string))
     return f"{thredds_root}/{filename}:{req.query_string[:-1]}"
 
 
+def build_das_url(handlers, thredds_root, req):
+    """Builds the URL for a DAS or DDS request. The URL has the form
+    [thredds_root][filepath].das."""
+    filepath = get_filepath_from_handlers(handlers, remove_final_extension(req.path_info))
+    return f"{thredds_root}/{filepath}.das"
+
+def build_dds_url(handlers, thredds_root, req):
+    """Builds the URL for a DDS request. The URL has the form 
+    [thredds_root][filepath].dds?[variable]"""
+    filepath = get_filepath_from_handlers(handlers, remove_final_extension(req.path_info))
+    return f"{thredds_root}/{filepath}.dds?{req.query_string}"
+    
+
+def remove_final_extension(filename):
+    """Given a string containing one or more ., remove the last . and 
+    everything after it. useful for parsing pyDAP or ORCA URLs, where
+    you typically have a filename, followed by a . and then the format you
+    want; test1.nc.das means you're reuqesting a .das describing test1.nc"""
+    return filename[0:filename.rfind(".")] if "." in filename else filename
+    
+
+def get_filepath_from_handlers(handlers, filename):
+    """THREDDS uses a full filepath to access data. Get the full filepath for a 
+    give filename."""
+    for handler in handlers:
+        if handler["url"] == filename: 
+            print("filename match default")
+            return handler["file"]
+        elif handler["url"] == filename.strip('/.'):
+            print("filename match stripped")
+            return handler["file"].strip('/.')
+    print("filepath not found: {}".format(filename))
+    
+
+    
 def db_raster_catalog(session, ensemble, root_url):
     """A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
 
