@@ -90,23 +90,19 @@ class RasterServer(object):
             )
             return res(environ, start_response)
         elif req.path_info.split(".")[-1] == "das":
-            das_url = build_das_url(
-                self.config["handlers"], self.config["thredds_root"], req
+            url = build_das_url(
+                self.config["handlers"], self.config["orca_root"], req
             )
-            print("generat das url {}".format(das_url))
-            return Response(status_code=301, location=das_url)
-        elif req.path_info.split(".")[-1] == "dds":
-            dds_url = build_dds_url(
-                self.config["handlers"], self.config["thredds_root"], req
+        elif req.path_info.split(".")[-1] in ["dds", "ascii"]:
+            url = build_dds_ascii_url(
+                self.config["handlers"], self.config["orca_root"], req
             )
-            print("generated dds url {}".format(dds_url))
-            return Response(status_code=301, location=dds_url)
         else:
-            orca_url = build_orca_url(
-                self.config["handlers"], self.config["thredds_root"], req
+            url = build_orca_url(
+                self.config["handlers"], self.config["orca_root"], req
             )
-            print("orca_url is {}".format(orca_url))
-            return Response(status_code=301, location=orca_url)
+        print("generated url {}".format(url))
+        return Response(status_code=301, location=url)
 
 
 class RasterCatalog(RasterServer):
@@ -252,15 +248,17 @@ class RasterMetadata(object):
 
         # Build and return response
         content = {key: getattr(result, key) for key in content_items}
+        print("content: {}".format(content))
         return response_200(start_response, content)
 
 
-def build_orca_url(handlers, thredds_root, req):
+def build_orca_url(handlers, orca_root, req):
     """orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
     to THREDDS into bite-sized chunks and then reasemmbles them for the user.
 
-    Orca is available through a url with the format:
-    [thredds_root]/[filepath]:[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
+    Orca is available through a url with one of the formats:
+    1. [orca_root]/?filepath=[filepath]
+    2. [orca_root]/?filepath=[filepath]&targets=time[time_start:time_end],lat[lat_start:lat_end],lon[lon_start:lon_end],[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
 
     where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
     """
@@ -284,29 +282,30 @@ def build_orca_url(handlers, thredds_root, req):
     return f"{thredds_root}/{filename}:{req.query_string[:-1]}"
 
 
-def build_das_url(handlers, thredds_root, req):
-    """Builds the URL for a DAS or DDS request. The URL has the form
-    [thredds_root][filepath].das."""
+def build_das_url(handlers, orca_root, req):
+    """Builds the URL for a DAS request. The URL has the form
+    [orca_root][filepath].das."""
     filepath = get_filepath_from_handlers(
         handlers, remove_final_extension(req.path_info)
     )
-    return f"{thredds_root}/{filepath}.das"
+    return f"{orca_root}/?filepath={filepath}.das&outfile={req.path_info.strip('/.')}"
 
 
-def build_dds_url(handlers, thredds_root, req):
-    """Builds the URL for a DDS request. The URL has the form
-    [thredds_root][filepath].dds?[variable]"""
+def build_dds_ascii_url(handlers, orca_root, req):
+    """Builds the URL for a DDS/ASCII request. The URL has the form
+    [orca_root][filepath].[dds,ascii]?[variable]"""
+    final_extension = req.path_info.split(".")[-1]
     filepath = get_filepath_from_handlers(
         handlers, remove_final_extension(req.path_info)
     )
-    return f"{thredds_root}/{filepath}.dds?{req.query_string}"
+    return f"{orca_root}/?filepath={filepath}.{final_extension}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
 
 
 def remove_final_extension(filename):
     """Given a string containing one or more ., remove the last . and
     everything after it. useful for parsing pyDAP or ORCA URLs, where
     you typically have a filename, followed by a . and then the format you
-    want; test1.nc.das means you're reuqesting a .das describing test1.nc"""
+    want; test1.nc.das means you're requesting a .das describing test1.nc"""
     return filename[0 : filename.rfind(".")] if "." in filename else filename
 
 
