@@ -279,8 +279,24 @@ def build_orca_url(handlers, orca_root, req):
             break
 
     print("req.query_string is {}".format(req.query_string))
-    return f"{thredds_root}/{filename}:{req.query_string[:-1]}"
+    if req.query_string == "":
+        return f"{orca_root}/?filepath={filename}"
+    else:
+        dims = get_target_dims(req.query_string[:-1])
+        return f"{orca_root}/?filepath={filename}&targets={dims}{req.query_string[:-1]}&outfile={req.path_info.strip('/.')}"
 
+def get_target_dims(var):
+    """Adds the dimensions with the bounds matching the data variable to the targets
+    for orca data requests."""
+    bounds = var[var.index("["):]
+    split_bounds = [bound + "]" for bound in bounds.split("]")][:-1]
+    target_dims = ""
+    for dim, bnd in zip(["time", "lat", "lon"], split_bounds):
+        if bnd == "[]":  # Get entire range of dimension
+            target_dims += dim + ","
+        else:
+            target_dims += dim + bnd + ","
+    return target_dims
 
 def build_das_url(handlers, orca_root, req):
     """Builds the URL for a DAS request. The URL has the form
