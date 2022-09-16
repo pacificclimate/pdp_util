@@ -90,17 +90,13 @@ class RasterServer(object):
             )
             return res(environ, start_response)
         elif req.path_info.split(".")[-1] == "das":
-            url = build_das_url(
-                self.config["handlers"], self.config["orca_root"], req
-            )
+            url = build_das_url(self.config["handlers"], self.config["orca_root"], req)
         elif req.path_info.split(".")[-1] in ["dds", "ascii"]:
             url = build_dds_ascii_url(
                 self.config["handlers"], self.config["orca_root"], req
             )
         else:
-            url = build_orca_url(
-                self.config["handlers"], self.config["orca_root"], req
-            )
+            url = build_orca_url(self.config["handlers"], self.config["orca_root"], req)
         print("generated url {}".format(url))
         return Response(status_code=301, location=url)
 
@@ -285,10 +281,11 @@ def build_orca_url(handlers, orca_root, req):
         dims = get_target_dims(req.query_string[:-1])
         return f"{orca_root}/?filepath={filename}&targets={dims}{req.query_string[:-1]}&outfile={req.path_info.strip('/.')}"
 
+
 def get_target_dims(var):
     """Adds the dimensions with the bounds matching the data variable to the targets
     for orca data requests."""
-    bounds = var[var.index("["):]
+    bounds = var[var.index("[") :]
     split_bounds = [bound + "]" for bound in bounds.split("]")][:-1]
     target_dims = ""
     for dim, bnd in zip(["time", "lat", "lon"], split_bounds):
@@ -297,6 +294,7 @@ def get_target_dims(var):
         else:
             target_dims += dim + bnd + ","
     return target_dims
+
 
 def build_das_url(handlers, orca_root, req):
     """Builds the URL for a DAS request. The URL has the form
