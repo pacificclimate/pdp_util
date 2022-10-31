@@ -90,7 +90,9 @@ class RasterServer(object):
             )
             return res(environ, start_response)
         elif req.path_info.split(".")[-1] != "nc":
-            url = build_metadata_url(self.config["handlers"], self.config["orca_root"], req)
+            url = build_metadata_url(
+                self.config["handlers"], self.config["orca_root"], req
+            )
         else:
             url = build_orca_url(self.config["handlers"], self.config["orca_root"], req)
         print("generated url {}".format(url))
@@ -283,7 +285,7 @@ def get_target_dims(var):
     for orca data requests."""
     try:
         bounds = var[var.index("[") :]
-    except ValueError: # Get full range of data variable
+    except ValueError:  # Get full range of data variable
         return "time,lat,lon,"
 
     split_bounds = [bound + "]" for bound in bounds.split("]")][:-1]
@@ -302,7 +304,7 @@ def build_metadata_url(handlers, orca_root, req):
     filepath = get_filepath_from_handlers(
         handlers, remove_final_extension(req.path_info)
     )
-    if req.query_string != '':
+    if req.query_string != "":
         return f"{orca_root}/?filepath={filepath}.{final_extension}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
     else:
         return f"{orca_root}/?filepath={filepath}.{final_extension}&outfile={req.path_info.strip('/.')}"
