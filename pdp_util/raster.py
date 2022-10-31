@@ -274,14 +274,18 @@ def build_orca_url(handlers, orca_root, req):
     if req.query_string == "":
         return f"{orca_root}/?filepath={filename}"
     else:
-        dims = get_target_dims(req.query_string[:-1])
-        return f"{orca_root}/?filepath={filename}&targets={dims}{req.query_string[:-1]}&outfile={req.path_info.strip('/.')}"
+        dims = get_target_dims(req.query_string.rstrip("&"))
+        return f"{orca_root}/?filepath={filename}&targets={dims}{req.query_string.rstrip('&')}&outfile={req.path_info.strip('/.')}"
 
 
 def get_target_dims(var):
     """Adds the dimensions with the bounds matching the data variable to the targets
     for orca data requests."""
-    bounds = var[var.index("[") :]
+    try:
+        bounds = var[var.index("[") :]
+    except ValueError: # Get full range of data variable
+        return "time,lat,lon,"
+
     split_bounds = [bound + "]" for bound in bounds.split("]")][:-1]
     target_dims = ""
     for dim, bnd in zip(["time", "lat", "lon"], split_bounds):
