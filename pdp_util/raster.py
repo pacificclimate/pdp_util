@@ -89,12 +89,8 @@ class RasterServer(object):
                 charset="utf-8",
             )
             return res(environ, start_response)
-        elif req.path_info.split(".")[-1] == "das":
-            url = build_das_url(self.config["handlers"], self.config["orca_root"], req)
-        elif req.path_info.split(".")[-1] in ["dds", "ascii"]:
-            url = build_dds_ascii_url(
-                self.config["handlers"], self.config["orca_root"], req
-            )
+        elif req.path_info.split(".")[-1] != "nc":
+            url = build_metadata_url(self.config["handlers"], self.config["orca_root"], req)
         else:
             url = build_orca_url(self.config["handlers"], self.config["orca_root"], req)
         print("generated url {}".format(url))
@@ -296,23 +292,16 @@ def get_target_dims(var):
     return target_dims
 
 
-def build_das_url(handlers, orca_root, req):
-    """Builds the URL for a DAS request. The URL has the form
-    [orca_root][filepath].das."""
-    filepath = get_filepath_from_handlers(
-        handlers, remove_final_extension(req.path_info)
-    )
-    return f"{orca_root}/?filepath={filepath}.das&outfile={req.path_info.strip('/.')}"
-
-
-def build_dds_ascii_url(handlers, orca_root, req):
-    """Builds the URL for a DDS/ASCII request. The URL has the form
-    [orca_root][filepath].[dds,ascii]?[variable]"""
+def build_metadata_url(handlers, orca_root, req):
+    """Builds the URL for a metadata (non-netCDF data) request."""
     final_extension = req.path_info.split(".")[-1]
     filepath = get_filepath_from_handlers(
         handlers, remove_final_extension(req.path_info)
     )
-    return f"{orca_root}/?filepath={filepath}.{final_extension}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
+    if req.query_string != '':
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
+    else:
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&outfile={req.path_info.strip('/.')}"
 
 
 def remove_final_extension(filename):
