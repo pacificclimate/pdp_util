@@ -209,7 +209,7 @@ def test_raster_metadata_minmax_bad_params(
                     "file": "/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc",
                 },
             ],
-            "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+            "orca_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
         }
     ],
 )
@@ -243,7 +243,7 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
                 "handlers": [
                     {"url": "bad_path.nc", "file": "bad_file.nc"},
                 ],
-                "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+                "orca_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
             },
         )
     ],
