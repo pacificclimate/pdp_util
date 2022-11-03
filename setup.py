@@ -42,6 +42,8 @@ setup(
         "pycds >=0.0.20",
         "numpy",
         "python-dateutil",
+        "pydap==3.2.2",
+        "pydap-extras",
         "modelmeta >=0.3.0",
         "PyYAML",
     ],
