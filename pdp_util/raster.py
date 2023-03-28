@@ -73,9 +73,6 @@ class RasterServer(object):
         """Makes catalog requests, but defers to OPeNDAP Request
         Compiler Application (ORCA) for data requests"""
 
-        print("RasterServer.__call__ made")
-        print(environ)
-        print("end environ")
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
@@ -95,7 +92,6 @@ class RasterServer(object):
             )
         else:
             url = build_orca_url(self.config["handlers"], self.config["orca_root"], req)
-        print("generated url {}".format(url))
         return Response(status_code=301, location=url)
 
 
@@ -104,13 +100,11 @@ class RasterCatalog(RasterServer):
 
     def __call__(self, environ, start_response):
         """An override of RasterServer's __call__ which allows only MetaData requests"""
-        print("in RasterCatalog.__call__")
         req = Request(environ)
         if req.path_info in ["/", "/catalog.json"]:
             environ["PATH_INFO"] = "/catalog.json"
             return super(RasterCatalog, self).__call__(environ, start_response)
         elif req.path_info.split(".")[-1] in ["das", "dds"]:
-            print("das or dds call made")
             return super(RasterCatalog, self).__call__(environ, start_response)
         else:
             return response_404(
@@ -242,7 +236,6 @@ class RasterMetadata(object):
 
         # Build and return response
         content = {key: getattr(result, key) for key in content_items}
-        print("content: {}".format(content))
         return response_200(start_response, content)
 
 
@@ -256,23 +249,16 @@ def build_orca_url(handlers, orca_root, req):
 
     where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
     """
-    print("in build_orca_url")
-    print("req is")
-    print(req.__dict__)
-    print("end req")
     filename = None
     for handler in handlers:
         # print("handler url: {} path_info: {}".format(handler["url"], req.path_info[:-3]))
         if handler["url"] == req.path_info[:-3]:
-            print("filename match default")
             filename = handler["file"]
             break
         elif handler["url"] == req.path_info[:-3].strip("/."):
-            print("filename match stripped")
             filename = handler["file"].strip("/,")
             break
 
-    print("req.query_string is {}".format(req.query_string))
     if req.query_string == "":
         return f"{orca_root}/?filepath={filename}"
     else:
@@ -323,12 +309,10 @@ def get_filepath_from_handlers(handlers, filename):
     give filename."""
     for handler in handlers:
         if handler["url"] == filename:
-            print("filename match default")
             return handler["file"]
         elif handler["url"] == filename.strip("/."):
-            print("filename match stripped")
             return handler["file"].strip("/.")
-    print("filepath not found: {}".format(filename))
+    raise Exception("filepath not found: {}".format(filename))
 
 
 def db_raster_catalog(session, ensemble, root_url):
