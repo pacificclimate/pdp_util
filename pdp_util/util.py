@@ -18,7 +18,11 @@ def get_stn_list(sesh, sql_constraints, to_select=[cng.network_name, cng.native_
     # to_select must be a list
     if not hasattr(to_select, "__len__"):
         to_select = [to_select]
-    q = sesh.query(*to_select).join(Station).join(Network)
+    q = (
+        sesh.query(*to_select)
+        .join(Station)
+        .join(Network, Network.id == Station.network_id)
+    )
     for constraint in sql_constraints:
         q = q.filter(constraint)
     q = q.filter(Network.publish == True)

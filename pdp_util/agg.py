@@ -131,7 +131,7 @@ def metadata_index_responder(sesh, network, climo=False):
 
     rv = (
         sesh.query(Variable)
-        .join(Network)
+        .join(Network, Network.id == Variable.network_id)
         .filter(Network.name == network)
         .filter(climo_filt)
     )

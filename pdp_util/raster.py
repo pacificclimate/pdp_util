@@ -192,14 +192,18 @@ class RasterMetadata(object):
         except KeyError:
             pass
 
-        # Build query according to content of response
+        # Define query according to content of response. To define the query, we build
+        # two related components of the query, `columns` and `joins`. Variable
+        # `columns` defines which columns are returned from the query (natch).
+        # Variable `joins` defines the tables to be joined. It is a tuple of pairs;
+        # each pair is of the form `(Table, join_condition)`
 
         # Default content
         columns = (
             DataFileVariableGridded.range_min.label("min"),
             DataFileVariableGridded.range_max.label("max"),
         )
-        joins = (DataFile,)
+        joins = ((DataFile, DataFile.id == DataFileVariableGridded.data_file_id),)
 
         # 'filepath' content
         if "filepath" in content_items:
@@ -208,7 +212,12 @@ class RasterMetadata(object):
         # 'units' content
         if "units" in content_items:
             columns += (VariableAlias.units.label("units"),)
-            joins += (VariableAlias,)
+            joins += (
+                (
+                    VariableAlias,
+                    VariableAlias.id==DataFileVariableGridded.variable_alias_id
+                ),
+            )
 
         with self.session_scope_factory() as sesh:
             q = (
@@ -216,8 +225,8 @@ class RasterMetadata(object):
                 .filter(DataFile.unique_id == unique_id)
                 .filter(DataFileVariableGridded.netcdf_variable_name == var)
             )
-            for Table in joins:
-                q = q.join(Table)
+            for join_args in joins:
+                q = q.join(*join_args)
 
         # Execute query
         try:
@@ -299,9 +308,15 @@ def db_raster_configurator(session, name, version, api_version, ensemble, root_u
 def ensemble_files(session, ensemble_name):
     q = (
         session.query(DataFile)
-        .join(DataFileVariableGridded)
-        .join(EnsembleDataFileVariables)
-        .join(Ensemble)
+        .join(
+            DataFileVariableGridded, DataFileVariableGridded.data_file_id == DataFile.id
+        )
+        .join(
+            EnsembleDataFileVariables,
+            EnsembleDataFileVariables.data_file_variable_id
+            == DataFileVariableGridded.id,
+        )
+        .join(Ensemble, Ensemble.id == EnsembleDataFileVariables.ensemble_id)
         .filter(Ensemble.name == ensemble_name)
     )
     return {row.unique_id: row.filename for row in q}
