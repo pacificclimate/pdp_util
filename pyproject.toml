@@ -58,6 +58,7 @@ Pillow = "==5.4.1"
 PyYAML = "==3.13"
 WebOb = "==1.8.7"
 Pydap = "==3.2.2"
+setuptools = "^69.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=4.1.1"
