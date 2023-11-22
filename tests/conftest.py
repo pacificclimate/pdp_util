@@ -1,8 +1,8 @@
 import datetime
+import importlib
 import logging
 import json
 from collections import OrderedDict
-from pkg_resources import resource_filename
 from webob.request import Request
 
 import pytest
@@ -28,6 +28,18 @@ import testing.postgresql
 from pdp_util.ensemble_members import EnsembleMemberLister
 from pdp_util.raster import RasterMetadata
 
+
+@pytest.fixture(scope="session")
+def pkg_file_root():
+    def f(package):
+        """
+        Returns a Path object that is the root of the package's "file system".
+        Additional path elements can be appended with the "/" operator.
+        """
+        with importlib.resources.path(package, "") as root:
+            return root
+
+    return f
 
 @pytest.fixture(scope="session")
 def engine():
@@ -62,11 +74,11 @@ def empty_session(engine):
 # independently, but will fail if run in the suite where test_session
 # is declared with session scope.
 @pytest.fixture(scope="function")
-def test_session(empty_session):
+def test_session(empty_session, pkg_file_root):
     logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
 
     empty_session.begin_nested()
-    with open(resource_filename("pycds", "data/crmp_subset_data.sql"), "r") as f:
+    with open(pkg_file_root("pycds") / "data" / "crmp_subset_data.sql", "r") as f:
         sql = f.read()
     empty_session.execute(sql)
     empty_session.commit()

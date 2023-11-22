@@ -1,4 +1,3 @@
-from pkg_resources import resource_filename
 
 from pdp_util.pcds_dispatch import PcdsDispatcher
 from pydap_extras.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
@@ -16,12 +15,12 @@ def make_common_assertions(resp):
         assert resp.content_length > 0
 
 
-@pytest.fixture(scope="function")
-def the_app(conn_params):
+@pytest.fixture(scope="function")  # TODO: Broaden scope?
+def the_app(conn_params, pkg_file_root):
     kwargs = {
         "pydap_root": "/tmp/",
         "app_root": "/",
-        "templates": resource_filename("pdp_util", "templates"),
+        "templates": str(pkg_file_root("pdp_util") / "templates"),
         "ol_path": "",
         "conn_params": conn_params,
     }
