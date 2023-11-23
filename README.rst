@@ -8,7 +8,8 @@ pdp_util
 .. image:: https://github.com/pacificclimate/pdp_util/workflows/Pypi%20Publishing/badge.svg
    :target: https://github.com/pacificclimate/pdp_util
 
-The `pdp_util` Python package is essentially a package that hosts a variety of utility modules that are required to run the `PCIC Data Portal <http://www.pacificclimate.org/data>`_. In practice, it contains a large part of the non-`Pydap <http://www.pydap.org>`_ code for the PCIC Data Portal [#non-pcic]_, while the `pdp` package pulls everything together in a single application. The utilies can be subdivided into those that support the "pcds" [#pcds]_ portal, those that support the "raster" portals, and those that serve both (i.e. globally applicable utilities).
+
+Python package `pdp_util` provides a variety of utility modules that are required to run the `PCIC Data Portal <http://www.pacificclimate.org/data>`_. In practice, it contains a large part of the non-`Pydap <http://www.pydap.org>`_ code for the PCIC Data Portal [#non-pcic]_, while the `pdp` package pulls everything together in a single application. The utilies can be subdivided into those that support the "pcds" [#pcds]_ portal, those that support the "raster" portals, and those that serve both (i.e. globally applicable utilities).
 
 PCDS Portal Utilities
 --------------
@@ -33,31 +34,20 @@ Globally applicable utilities
 * The `auth` module contains WSGI middleware for providing authentication via OpenID.
 * The `dbdict` module contains a function to convert dict object into a database DSN.
 
-Testing
--------
-
-Our production database environment (PostgreSQL 9.1) is far out of date and it is hard to establish a
-local installation suitable for running tests. But it is reasonably easy to build Docker images containing
-the desired environment for testing. This is done in two ways:
-
-* In the python-ci GitHub action, which performs automated testing on every push.
-* In the Docker image `pcic/pdp_util-local-pytest`, which can be run locally in interactive mode to provide
-  a persistent environment for running tests. For details, its [README](docker/local-pytest/README.md).
-
 Local Install for Development
 -----------------------------
 
-If your workstation has GDAL 3, postgresql, and python 3 and you are on the PCIC VPN, this package can be installed in a virtual environment via `pipenv` and configured to connect to the replicated database at db3.pcic.uvic.ca via setting the `DSN` and `PCDS_DSN` environment variables (passwords are available in Team Password Manager). This provides a fairly low-overhead way to run tests. If any of those factors are missing, testing in a docker container, as described above, is your best bet.
+If your workstation has GDAL 3, postgresql, and python 3 and you are on the PCIC VPN, this package can be installed in a virtual environment with `Poetry <https://python-poetry.org/>`_ and configured to connect to the replicated database at db3.pcic.uvic.ca by setting the `DSN` and `PCDS_DSN` environment variables (passwords are available in Team Password Manager) accordingly. This provides a fairly low-overhead way to run tests.
 
 Some useful pipenv commands:
-* `pipenv install` - installs the package and sets up a virtual environment
-* `pipenv run pytest` - runs pytest, or any other desired command, in the virtual environment in which the package has been installed
-* `pipenv graph` - see a dependency tree
-* `pipenv install XXX==1.2.3` / `pipenv uninstall XXX` - add or remove a dependency
-* `pipenv shell` - load the virtual environment in the current terminal
-* `exit` - exit the virtual environment. Don't use `deactivate` as you would for a regular python environment, it does not completely exit the `pipenv` environment, which can lead to some very confusing behaviour
 
-Addition pipenv documentation is available `here <https://pipenv.pypa.io/en/latest/>`_. 
+* `poetry install` - installs the package and sets up a virtual environment
+* `poetry run pytest` - runs pytest, or any other desired command, in the virtual environment in which the package has been installed
+* `poetry show --tree` - see a dependency tree
+* `poetry shell` - load the virtual environment in the current terminal
+* `exit` - exit the Poetry shell. Don't use `deactivate` as you would for a regular python environment, it does not completely exit the Poetry virtualenv.
+
+Additional Poetry documentation is available `here <https://python-poetry.org/docs/>`_.
 
 .. rubric:: Footnotes
 
