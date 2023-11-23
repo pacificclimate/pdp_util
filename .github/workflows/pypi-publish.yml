@@ -34,7 +34,7 @@ jobs:
           poetry config http-basic.pcic $PCIC_PYPI_USERNAME $PCIC_PYPI_PASSWORD
           
           # Install project
-          poetry install --without dev
+          poetry install --without test,black
   
           # Build and publish
           poetry build

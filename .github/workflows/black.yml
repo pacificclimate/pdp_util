@@ -1,5 +1,4 @@
-
-name: Black
+name: Black check
 
 on: push
 
@@ -13,4 +12,6 @@ jobs:
       - uses: actions/setup-python@v2
       - uses: psf/black@stable
         with:
-          black_args: ". --check"
+          version: "23.11.0"
+          options: "--check"
+          src: "."

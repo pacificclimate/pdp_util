@@ -39,7 +39,7 @@ jobs:
 
       - name: Install project
         run: |
-          poetry install
+          poetry install --without black
 
       - name: Test with pytest (full)
         if: github.ref == 'refs/heads/master'
