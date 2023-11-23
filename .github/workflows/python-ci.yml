@@ -24,10 +24,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-
       - name: Install system dependencies
         run: |
           sudo apt-get install -y curl ca-certificates gnupg
@@ -37,12 +33,20 @@ jobs:
           sudo apt purge postgresql-client-13 postgresql-server-dev-all
           sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev postgresql-12-postgis-3
 
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install project
+        run: |
+          poetry install
+
       - name: Test with pytest (full)
         if: github.ref == 'refs/heads/master'
         run: |
-          poetry run py.test -m "not online" -v --tb=short tests
+          poetry run pytest -m "not online" -v --tb=short tests
 
       - name: Test with pytest (fast)
         if: github.ref != 'refs/heads/master'
         run: |
-          poetry run py.test -m "not online and not slow" -v --tb=short tests
+          poetry run pytest -m "not online and not slow" -v --tb=short tests
