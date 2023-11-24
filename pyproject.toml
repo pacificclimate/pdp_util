@@ -40,7 +40,7 @@ priority = "supplemental"
 [tool.poetry.dependencies]
 python = "^3.8"
 # TODO: Updgrade and loosen version specs
-pycds = { version = "2.2.1",  source = "pcic-pypi" }
+pycds = { version = "^4.4.0",  source = "pcic-pypi" }
 modelmeta = { version = "^1.0.1",  source = "pcic-pypi" }
 pydap-extras = { version = "0.1.1",  source = "pcic-pypi" }
 Pydap = "3.2.2"
