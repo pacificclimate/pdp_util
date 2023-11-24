@@ -36,7 +36,6 @@ class CountStationsApp(object):
             yield sesh
 
         with self.session_scope_factory() if not sesh else dummy_context() as sesh:
-
             stns = get_stn_list(sesh, filters)
 
         return json.dumps({"stations_selected": len(stns)})
