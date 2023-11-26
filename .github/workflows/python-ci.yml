@@ -34,7 +34,7 @@ jobs:
           # Install postgresql extensions
           sudo apt-get install postgresql-plpython3-14 postgresql-14-postgis-3
           # Install remaining dependencies
-          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev
+          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev libgdal-dev 
 
       - name: Install Poetry
         run: |
