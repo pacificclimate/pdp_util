@@ -30,23 +30,20 @@ files = [
 
 [[package]]
 name = "beaker"
-version = "1.10.0"
+version = "1.12.1"
 description = "A Session and Caching library with WSGI Middleware"
 optional = false
 python-versions = "*"
 files = [
-    {file = "Beaker-1.10.0.tar.gz", hash = "sha256:6072892918225f5a055413082f2ff285f3ebca6a3873a0d6e163253ba83f0450"},
+    {file = "Beaker-1.12.1.tar.gz", hash = "sha256:57770b40956e6c5cf1d8221dc59519029e470080ed8d3065c4e6ab36ce7e3c81"},
 ]
-
-[package.dependencies]
-funcsigs = "*"
 
 [package.extras]
 crypto = ["pycryptopp (>=0.5.12)"]
 cryptography = ["cryptography"]
 pycrypto = ["pycrypto"]
 pycryptodome = ["pycryptodome"]
-testsuite = ["Mock", "coverage", "cryptography", "nose", "pycryptodome", "pylibmc", "pymongo", "python-memcached", "redis", "sqlalchemy", "webtest"]
+testsuite = ["Mock", "coverage", "cryptography", "pycryptodome", "pylibmc", "pymongo", "pytest", "python-memcached", "redis", "sqlalchemy", "webtest"]
 
 [[package]]
 name = "beautifulsoup4"
@@ -255,17 +252,6 @@ files = [
 
 [package.extras]
 test = ["pytest (>=6)"]
-
-[[package]]
-name = "funcsigs"
-version = "1.0.2"
-description = "Python function signatures from PEP362 for Python 2.6, 2.7 and 3.2+"
-optional = false
-python-versions = "*"
-files = [
-    {file = "funcsigs-1.0.2-py2.py3-none-any.whl", hash = "sha256:330cc27ccbf7f1e992e69fef78261dc7c6569012cf397db8d3de0234e6c937ca"},
-    {file = "funcsigs-1.0.2.tar.gz", hash = "sha256:a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50"},
-]
 
 [[package]]
 name = "gdal"
@@ -1503,4 +1489,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c28150bb9507ffa5f43f3adb6364833892072d75c1047b4dbc03e20aa2a21653"
+content-hash = "dc1277fbd93bb100d75f040156f7a13cb75237f3b9f787eddb3f1eef9c2c4f07"
