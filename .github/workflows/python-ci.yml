@@ -10,10 +10,9 @@ jobs:
       matrix:
         python-version:
           - "3.8"
-          # TODO: Test with other Pythons
-#          - "3.9"
-#          - "3.10"
-#          - "3.11"
+          - "3.9"
+          - "3.10"
+          - "3.11"
 
     steps:
       - name: Checkout
