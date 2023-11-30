@@ -2,7 +2,13 @@
 name = "pdp-util"
 version = "2.1.0"
 description = "A package supplying numerous apps for running PCIC's data server"
-authors = ["James Hiebert <hiebert@uvic.ca>"]
+authors = [
+    "James Hiebert <hiebert@uvic.ca>",
+    "Rod Glover <@uvic.ca>",
+    "Lee Zeman <lzeman@uvic.ca>",
+    "Cairo Sanders <cairosanders@uvic.ca>",
+    "Nik Radoš",
+]
 readme = "README.rst"
 homepage = "http://www.pacificclimate.org/"
 repository = "https://github.com/pacificclimate/pdp_util"
