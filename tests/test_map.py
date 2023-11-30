@@ -24,6 +24,7 @@ def test_can_instantiate(kwargs):
 
 
 # FIXME: we can't actually _do_ a package-independent render now that the templates are in pdp... *grumble*
+# TODO: This test can go away completely when #47 is closed.
 def notest_minimal_render(kwargs):
     map_app = MapApp(**kwargs)
     text = map_app({}, lambda x, y: "")
