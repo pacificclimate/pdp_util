@@ -1,13 +1,19 @@
 import datetime
+import importlib
 import logging
 import json
 from collections import OrderedDict
-from pkg_resources import resource_filename
+
+import alembic
+import alembic.config
+import alembic.command
+from pycds import CrmpNetworkGeoserver, VarsPerHistory
 from webob.request import Request
 
 import pytest
 
 import pycds
+import pycds.alembic
 import modelmeta
 from modelmeta import (
     Model,
@@ -30,52 +36,187 @@ from pdp_util.raster import RasterMetadata
 
 
 @pytest.fixture(scope="session")
-def engine():
-    """Test-session-wide database engine"""
-    with testing.postgresql.Postgresql() as pg:
-        engine = create_engine(pg.url())
-        engine.execute("create extension postgis")
-        engine.execute(CreateSchema("crmp"))
-        engine.execute("SET search_path TO crmp, public")
-        pycds.Base.metadata.create_all(bind=engine)
-        yield engine
+def pkg_file_root():
+    def f(package):
+        """
+        Returns a Path object that is the root of the package's "file system".
+        Additional path elements can be appended with the "/" operator.
+        """
+        with importlib.resources.path(package, "") as root:
+            return root
+
+    return f
 
 
 @pytest.fixture(scope="session")
-def empty_session(engine):
-    """Single-test database session. All session actions are rolled back on teardown"""
-    session = sessionmaker(bind=engine)()
-    # Default search path is `"$user", public`. Need to reset that to search crmp (for our db/orm content) and
-    # public (for postgis functions)
-    session.execute("SET search_path TO crmp, public")
-    # print('\nsearch_path', [r for r in session.execute('SHOW search_path')])
-    yield session
-    session.rollback()
-    session.close()
+def schema_name():
+    return pycds.get_schema_name()
 
+
+@pytest.fixture(scope="session")
+def database_uri():
+    """URI of test PG database"""
+    with testing.postgresql.Postgresql() as pg:
+        yield pg.url()
+
+
+@pytest.fixture(scope="session")
+def base_engine(database_uri):
+    """Plain vanilla database engine, with nothing added."""
+    yield create_engine(database_uri)
+
+
+def initialize_database(engine, schema_name):
+    """Initialize an empty database"""
+    # Add role required by PyCDS migrations for privileged operations.
+    engine.execute(f"CREATE ROLE {pycds.get_su_role_name()} WITH SUPERUSER NOINHERIT;")
+    # Add extensions required by PyCDS.
+    engine.execute("CREATE EXTENSION postgis")
+    engine.execute("CREATE EXTENSION plpython3u")
+    engine.execute("CREATE EXTENSION IF NOT EXISTS citext")
+    # Add schema.
+    engine.execute(CreateSchema(schema_name))
+
+
+@pytest.fixture(scope="session")
+def pycds_engine(base_engine, database_uri, schema_name):
+    initialize_database(base_engine, schema_name)
+    yield base_engine
+
+
+@pytest.fixture(scope="session")
+def alembic_script_location():
+    """
+    This fixture extracts the filepath to the installed pycds Alembic content.
+    The filepath is typically like
+    `/usr/local/lib/python3.6/dist-packages/pycds/alembic`.
+    """
+    try:
+        import importlib_resources
+
+        source = importlib_resources.files(pycds.alembic)
+    except ModuleNotFoundError:
+        import importlib.resources
+
+        if hasattr(importlib.resources, "files"):
+            source = importlib.resources.files(pycds.alembic)
+        else:
+            with importlib.resources.path("pycds", "alembic") as path:
+                source = path
+
+    yield str(source)
+
+
+def migrate_database(script_location, database_uri, revision="head"):
+    """
+    Migrate a database to a specified revision using Alembic.
+    This requires a privileged role to be added in advance to the database.
+    """
+    alembic_config = alembic.config.Config()
+    alembic_config.set_main_option("script_location", script_location)
+    alembic_config.set_main_option("sqlalchemy.url", database_uri)
+    alembic.command.upgrade(alembic_config, revision)
+
+
+@pytest.fixture(scope="session")
+def empty_session(pycds_engine, alembic_script_location, database_uri):
+    migrate_database(alembic_script_location, database_uri)
+    Session = sessionmaker(bind=pycds_engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture(scope="session")
+def collapsed_vars_mv_sql():
+    """
+    SQL to populate table CollapsedVariables / collapsed_vars_mv with test data.
+
+    CrmpNetworkGeoserver depends on the contents of CollapsedVariables.
+    CollapsedVariables maps to a manual matview, which must be populated manually.
+    The needed data was defined in pycds v2.2.1 crmp_subset_data, in particular,
+    embodied in the inserts to crmp_network_geoserver in that file. Later versions
+    of pycds have no need of that data, so it was lost removed. This restores it
+    for our purposes.
+    """
+    return """
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1116, 'lwe_thickness_of_precipitation_amount_sum, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperature_minimum, air_temperaturet: minimum within days t: mean within months t: mean over years, thickness_of_snowfall_amount_sum, air_temperature_maximum, thickness_of_rainfall_amount_sum, surface_snow_thickness_point, air_temperaturet: mean within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years', 'Precipitation Amount|Temperature Climatology (Max.)|Temperature (Min.)|Temperature Climatology (Min.)|Snowfall Amount|Temperature (Max.)|Rainfall Amount|Surface Snow Depth (Point)|Temperature Climatology (Mean)|Precipitation Climatology');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(3416, 'lwe_thickness_of_precipitation_sum, air_temperature_minimum, surface_snow_thickness_point, wind_speed_maximum, lwe_thickness_of_precipitation_amount_sum, wind_speed_point, relative_humidity_mean, air_temperature_point, wind_from_direction_mean, thickness_of_snowfall_amount_sum, dew_point_temperature_mean, wind_from_direction_point, lwe_thickness_of_precipitation_amount_sum, air_temperature_point, wind_from_direction_standard_deviation, air_temperaturet: minimum within days t: mean within months t: mean over years, wind_speed_mean, air_temperature_maximum, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperaturet: mean within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_pressure_point', 'Precipitation (Cumulative)|Rainfall Amount|Temperature (Min.)|Surface Snow Depth (Point)|Wind Speed (Max.)|Precipitation Amount|Wind Speed (Point)|Relative Humidity (Mean)|Temperature (Point)|Wind Direction (Mean)|Snowfall Amount|Dew Point Temperature (Mean)|Wind Direction (Point)|Precipitation Amount|Temperature (Point)|Wind Direction (Std Dev)|Temperature Climatology (Min.)|Wind Speed (Mean)|Temperature (Max.)|Temperature Climatology (Max.)|Temperature Climatology (Mean)|Precipitation Climatology|Air Pressure (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(3616, 'surface_snow_thickness_point, lwe_thickness_of_precipitation_amount_sum, air_temperature_point', 'Surface Snow Depth (Point)|Precipitation Amount|Temperature (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(8516, 'air_temperature_minimum, lwe_thickness_of_precipitation_amount_sum, air_temperature_maximum', 'Temperature (Min.)|Precipitation Amount|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1516, 'thickness_of_rainfall_amount_sum, air_temperaturet: mean within days t: mean within months t: mean over years, air_temperaturet: minimum within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperaturet: maximum within days t: mean within months t: mean over years, surface_snow_thickness_point, air_temperature_maximum, lwe_thickness_of_precipitation_amount_sum, air_temperature_minimum, thickness_of_snowfall_amount_sum', 'Rainfall Amount|Temperature Climatology (Mean)|Temperature Climatology (Min.)|Precipitation Climatology|Temperature Climatology (Max.)|Surface Snow Depth (Point)|Temperature (Max.)|Precipitation Amount|Temperature (Min.)|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1816, 'air_temperature_maximum, air_temperaturet: mean within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperaturet: minimum within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amount_sum, air_temperature_minimum, thickness_of_rainfall_amount_sum, air_temperaturet: maximum within days t: mean within months t: mean over years, thickness_of_snowfall_amount_sum, surface_snow_thickness_point', 'Temperature (Max.)|Temperature Climatology (Mean)|Precipitation Climatology|Temperature Climatology (Min.)|Precipitation Amount|Temperature (Min.)|Rainfall Amount|Temperature Climatology (Max.)|Snowfall Amount|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(7516, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(8416, 'thickness_of_snowfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, air_temperature_minimum, air_temperature_maximum', 'Snowfall Amount|Precipitation Amount|Temperature (Min.)|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6716, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Precipitation (Cumulative)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5416, 'lwe_thickness_of_precipitation_sum, air_temperature_minimum, surface_snow_thickness_point, air_temperature_maximum', 'Precipitation (Cumulative)|Temperature (Min.)|Surface Snow Depth (Point)|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5816, 'lwe_thickness_of_precipitation_amount_sum', 'Precipitation Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5216, 'air_temperature_minimum, air_temperature_maximum', 'Temperature (Min.)|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6516, 'air_temperature_minimum, air_temperature_maximum', 'Temperature (Min.)|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(2516, 'wind_speed_mean, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, relative_humidity_mean, air_temperature_point, wind_from_direction_mean, lwe_thickness_of_precipitation_amount_sum', 'Wind Speed (Mean)|Precipitation Climatology|Relative Humidity (Mean)|Temperature (Point)|Wind Direction (Mean)|Precipitation Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(2016, 'relative_humidity_mean, wind_from_direction_mean, lwe_thickness_of_precipitation_amount_sum, wind_speed_mean, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperature_point', 'Relative Humidity (Mean)|Wind Direction (Mean)|Precipitation Amount|Wind Speed (Mean)|Precipitation Climatology|Temperature (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5716, 'lwe_thickness_of_precipitation_sum, air_temperature_maximum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point, air_temperature_minimum', 'Precipitation (Cumulative)|Temperature (Max.)|Precipitation (Cumulative)|Surface Snow Depth (Point)|Temperature (Min.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5916, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Precipitation (Cumulative)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1316, 'lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperaturet: mean within days t: mean within months t: mean over years, surface_snow_thickness_point, air_temperature_maximum, thickness_of_snowfall_amount_sum, air_temperaturet: minimum within days t: mean within months t: mean over years, air_temperature_minimum, thickness_of_rainfall_amount_sum, lwe_thickness_of_precipitation_amount_sum', 'Precipitation Climatology|Temperature Climatology (Max.)|Temperature Climatology (Mean)|Surface Snow Depth (Point)|Temperature (Max.)|Snowfall Amount|Temperature Climatology (Min.)|Temperature (Min.)|Rainfall Amount|Precipitation Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6916, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Precipitation (Cumulative)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1216, 'air_temperature_minimum, air_temperaturet: minimum within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperature_maximum, surface_snow_thickness_point, lwe_thickness_of_precipitation_amount_sum, thickness_of_rainfall_amount_sum, thickness_of_snowfall_amount_sum, air_temperaturet: mean within days t: mean within months t: mean over years', 'Temperature (Min.)|Temperature Climatology (Min.)|Precipitation Climatology|Temperature Climatology (Max.)|Temperature (Max.)|Surface Snow Depth (Point)|Precipitation Amount|Rainfall Amount|Snowfall Amount|Temperature Climatology (Mean)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(7716, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Precipitation (Cumulative)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5316, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1416, 'air_temperature_minimum, lwe_thickness_of_precipitation_amount_sum, air_temperature_maximum, surface_snow_thickness_point, thickness_of_rainfall_amount_sum, thickness_of_snowfall_amount_sum', 'Temperature (Min.)|Precipitation Amount|Temperature (Max.)|Surface Snow Depth (Point)|Rainfall Amount|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5616, 'surface_snow_thickness_point, lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Surface Snow Depth (Point)|Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(8216, 'air_temperature_minimum, air_temperature_maximum, lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Temperature (Min.)|Temperature (Max.)|Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1016, 'lwe_thickness_of_precipitation_amount_sum, air_temperaturet: maximum within days t: mean within months t: mean over years, surface_snow_thickness_point, thickness_of_rainfall_amount_sum, air_temperature_minimum, thickness_of_snowfall_amount_sum, air_temperaturet: minimum within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperature_maximum, air_temperaturet: mean within days t: mean within months t: mean over years', 'Precipitation Amount|Temperature Climatology (Max.)|Surface Snow Depth (Point)|Rainfall Amount|Temperature (Min.)|Snowfall Amount|Temperature Climatology (Min.)|Precipitation Climatology|Temperature (Max.)|Temperature Climatology (Mean)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(516, 'lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, thickness_of_rainfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, surface_snow_thickness_point, thickness_of_snowfall_amount_sum', 'Precipitation Climatology|Rainfall Amount|Precipitation Amount|Surface Snow Depth (Point)|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6316, 'lwe_thickness_of_precipitation_sum, surface_snow_thickness_point, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Surface Snow Depth (Point)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(416, 'thickness_of_rainfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, thickness_of_snowfall_amount_sum', 'Rainfall Amount|Precipitation Amount|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(7316, 'lwe_thickness_of_precipitation_sum, surface_snow_thickness_point, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Surface Snow Depth (Point)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6116, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(8016, 'lwe_thickness_of_precipitation_amount_sum, air_temperature_minimum, surface_snow_thickness_point, air_temperature_maximum', 'Precipitation Amount|Temperature (Min.)|Surface Snow Depth (Point)|Temperature (Max.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1616, 'air_temperature_maximum, air_temperaturet: mean within days t: mean within months t: mean over years, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperaturet: minimum within days t: mean within months t: mean over years, thickness_of_snowfall_amount_sum, thickness_of_rainfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperature_minimum', 'Temperature (Max.)|Temperature Climatology (Mean)|Temperature Climatology (Max.)|Temperature Climatology (Min.)|Snowfall Amount|Rainfall Amount|Precipitation Amount|Precipitation Climatology|Temperature (Min.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(816, 'air_temperature_minimum, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperature_maximum, lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, thickness_of_rainfall_amount_sum, air_temperaturet: mean within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amount_sum, air_temperaturet: minimum within days t: mean within months t: mean over years, thickness_of_snowfall_amount_sum', 'Temperature (Min.)|Temperature Climatology (Max.)|Temperature (Max.)|Precipitation Climatology|Rainfall Amount|Temperature Climatology (Mean)|Precipitation Amount|Temperature Climatology (Min.)|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1716, 'lwe_thickness_of_precipitation_amountt: sum within months t: mean over years, air_temperaturet: minimum within days t: mean within months t: mean over years, air_temperature_maximum, air_temperaturet: mean within days t: mean within months t: mean over years, thickness_of_rainfall_amount_sum, surface_snow_thickness_point, air_temperature_minimum, air_temperaturet: maximum within days t: mean within months t: mean over years, lwe_thickness_of_precipitation_amount_sum, thickness_of_snowfall_amount_sum', 'Precipitation Climatology|Temperature Climatology (Min.)|Temperature (Max.)|Temperature Climatology (Mean)|Rainfall Amount|Surface Snow Depth (Point)|Temperature (Min.)|Temperature Climatology (Max.)|Precipitation Amount|Snowfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(716, 'thickness_of_snowfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, surface_snow_thickness_point, thickness_of_rainfall_amount_sum', 'Snowfall Amount|Precipitation Amount|Surface Snow Depth (Point)|Rainfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(3016, 'air_temperature_mean, wind_speed_point, relative_humidity_point, wind_from_direction_point', 'Temperature (Mean)|Wind Speed (Point)|Relative Humidity (Point)|Wind Direction (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6816, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Precipitation (Cumulative)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(2716, 'lwe_thickness_of_precipitation_amount_sum, air_temperature_point, wind_from_direction_mean, wind_speed_mean, relative_humidity_mean', 'Precipitation Amount|Temperature (Point)|Wind Direction (Mean)|Wind Speed (Mean)|Relative Humidity (Mean)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(8316, 'tendency_of_air_pressure_sum, dew_point_temperature_point, wind_speed_point, air_temperature_point, air_temperature_minimum, lwe_thickness_of_precipitation_amount_sum, wind_from_direction_mean, air_temperature_maximum, wind_speed_of_gust_maximum, mean_sea_level_point, thickness_of_snowfall_amount_sum, relative_humidity_point', 'Air Pressure Tendency|Dew Point Temperature (Point)|Wind Speed (Point)|Temperature (Point)|Temperature (Min.)|Precipitation Amount|Wind Direction (Mean)|Temperature (Max.)|Wind Gust (Max.)|Mean Sea Level|Snowfall Amount|Relative Humidity (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(1916, 'lwe_thickness_of_precipitation_amount_sum, air_temperature_maximum, air_temperature_minimum', 'Precipitation Amount|Temperature (Max.)|Temperature (Min.)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(6016, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5116, 'lwe_thickness_of_precipitation_sum, air_temperature_maximum, lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_amount_sum, air_temperature_minimum, surface_snow_thickness_point', 'Precipitation (Cumulative)|Temperature (Max.)|Precipitation (Cumulative)|Precipitation Amount|Temperature (Min.)|Surface Snow Depth (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(3516, 'lwe_thickness_of_precipitation_sum, air_temperature_minimum, surface_snow_thickness_point, wind_speed_maximum, lwe_thickness_of_precipitation_amount_sum, wind_speed_point, relative_humidity_mean, air_temperature_point, wind_from_direction_mean, thickness_of_snowfall_amount_sum, dew_point_temperature_mean, wind_from_direction_point, lwe_thickness_of_precipitation_amount_sum, air_temperature_point, wind_from_direction_standard_deviation, air_temperaturet: minimum within days t: mean within months t: mean over years, wind_speed_mean, air_temperature_maximum, air_temperaturet: maximum within days t: mean within months t: mean over years, air_temperaturet: mean within days t: mean within months t: mean over years, air_pressure_point', 'Precipitation (Cumulative)|Temperature (Min.)|Surface Snow Depth (Point)|Wind Speed (Max.)|Precipitation Amount|Wind Speed (Point)|Relative Humidity (Mean)|Temperature (Point)|Wind Direction (Mean)|Snowfall Amount|Dew Point Temperature (Mean)|Wind Direction (Point)|Precipitation Amount|Temperature (Point)|Wind Direction (Std Dev)|Temperature Climatology (Min.)|Wind Speed (Mean)|Temperature (Max.)|Temperature Climatology (Max.)|Temperature Climatology (Mean)|Air Pressure (Point)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(7816, 'lwe_thickness_of_precipitation_sum, surface_snow_thickness_point, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Surface Snow Depth (Point)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(916, 'air_temperature_maximum, air_temperature_minimum, thickness_of_snowfall_amount_sum, lwe_thickness_of_precipitation_amount_sum, thickness_of_rainfall_amount_sum', 'Temperature (Max.)|Temperature (Min.)|Snowfall Amount|Precipitation Amount|Rainfall Amount');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(7016, 'lwe_thickness_of_precipitation_sum, lwe_thickness_of_precipitation_sum', 'Precipitation (Cumulative)|Precipitation (Cumulative)');
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(4116, NULL, NULL);
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(13216, NULL, NULL);
+INSERT INTO collapsed_vars_mv (history_id, vars, display_names) VALUES(5516, NULL, NULL);
+"""
 
 # Ideally we could leave this as scope="session" (because it's much
 # faster!), but something in the SQL that gets executed below messes
 # up the search path such that SQLALchemy can't find any of the
-# PostGIS fuctions. As an demonstration of this behaviour, the
+# PostGIS functions. As a demonstration of this behaviour, the
 # test_geo.py:test_that_I_can_use_PostGIS function will pass when run
 # independently, but will fail if run in the suite where test_session
 # is declared with session scope.
 @pytest.fixture(scope="function")
-def test_session(empty_session):
+def test_session(schema_name, empty_session, pkg_file_root, collapsed_vars_mv_sql):
     logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
+    # It's not clear why this has to be set here, given it is set in engine, but ...
+    empty_session.execute(f"SET search_path TO {schema_name}, public")
 
     empty_session.begin_nested()
-    with open(resource_filename("pycds", "data/crmp_subset_data.sql"), "r") as f:
+    # Oh, this is a bad idea
+    with open(pkg_file_root("pycds") / "data" / "crmp_subset_data.sql", "r") as f:
         sql = f.read()
     empty_session.execute(sql)
+    empty_session.execute(collapsed_vars_mv_sql)
+    empty_session.execute(VarsPerHistory.refresh())
     empty_session.commit()
 
     logging.getLogger("sqlalchemy.engine").setLevel(
         logging.INFO
     )  # Let's not log all the db setup stuff...
 
-    empty_session.execute("SET search_path TO crmp, public")
     yield empty_session
 
     empty_session.rollback()
