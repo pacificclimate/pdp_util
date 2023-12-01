@@ -43,6 +43,8 @@ jobs:
           sudo apt-get install -yq postgresql-14-postgis-3
           echo "installing postgresql-plpython3-14"
           sudo apt-get install -yq postgresql-plpython3-14
+          # Install remaining dependencies
+          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev libgdal-dev
 
       - name: Install Poetry
         run: |
