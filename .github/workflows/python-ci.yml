@@ -4,8 +4,8 @@ on: push
 
 jobs:
   test:
+    runs-on: ubuntu-22.04
 
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
         python-version:
@@ -22,16 +22,27 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install system dependencies
+        # ubuntu-22.04 has the following postgres packages by default:
+        # postgresql-14/now 14.8-1.pgdg22.04+1 amd64 [installed,local]
+        # postgresql-client-14/now 14.8-1.pgdg22.04+1 amd64 [installed,local]
+        # postgresql-client-common/now 250.pgdg22.04+1 all [installed,local]
+        # postgresql-common/now 250.pgdg22.04+1 all [installed,local]
+        #
+        # postgresql-14-postgis-3 requires a different version, as installed
+        # below. However, the version required is periodically updated, and the
+        # previous version becomes unavailable. To discover what version is
+        # required, comment out the indicated line, read the error message, and
+        # update the installation as indicated.
         run: |
-          # Add legacy repo and update
-          sudo apt-get install -y curl ca-certificates gnupg
-          sudo curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          sudo echo 'deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt list --installed | grep postgres
           sudo apt-get update
-          # Install postgresql extensions
-          sudo apt-get install postgresql-plpython3-14 postgresql-14-postgis-3
-          # Install remaining dependencies
-          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev libgdal-dev 
+          echo "downgrading postgresql-14"
+          # The version of postgresql-14 may periodically require updating. See above.
+          sudo apt-get install -yq --allow-downgrades postgresql-14=14.9-0ubuntu0.22.04.1
+          echo "installing postgresql-14-postgis-3"
+          sudo apt-get install -yq postgresql-14-postgis-3
+          echo "installing postgresql-plpython3-14"
+          sudo apt-get install -yq postgresql-plpython3-14
 
       - name: Install Poetry
         run: |
