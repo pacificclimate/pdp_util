@@ -1,5 +1,12 @@
 # News / Release Notes
 
+## 2.1.2
+
+*Release Date: 2023-Dec-01*
+
+Changes:
+- [Fix PyPI publishing](https://github.com/pacificclimate/pdp_util/pull/54)
+
 ## 2.1.1
 
 *Release Date: 2023-Dec-01*
