@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pdp-util"
-version = "2.1.0"
+version = "2.1.1"
 description = "A package supplying numerous apps for running PCIC's data server"
 authors = [
     "James Hiebert <hiebert@uvic.ca>",

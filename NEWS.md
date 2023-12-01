@@ -1,5 +1,30 @@
 # News / Release Notes
 
+## 2.1.1
+
+*Release Date: 2023-Dec-01*
+
+This release marks two things:
+- The change of the dependency management system from Pipenv to Poetry. This is an entirely internal development matter.
+- Significant changes to the dependencies themselves ([PR #52](https://github.com/pacificclimate/pdp_util/pull/52)). These can affect client packages.
+
+**This release makes no changes to the `pdp_util` API.**
+
+Dependency changes:
+- Removes unnecessary explicit dependencies
+- Upgrades many dependencies to their latest versions, most importantly `pycds`, `modelmeta`, `pydap-extras`, `sqlalchemy`
+- Loosens many dependency version constraints
+
+Additionally:
+- Adjusts queries and tests accordingly
+- Removes now superfluous Docker test infrastructure
+- Moves pytest.ini into pyproject.toml 
+
+Despite the absence of API changes, this is a major move for this package. It is being released partly in order to allow experimentation if necessary with the unchanged API and functionality.
+
+There was a question in my mind about how to increment the version number for
+such a change. Semver addresses this [explicitly](https://semver.org/#what-should-i-do-if-i-update-my-own-dependencies-without-changing-the-public-api). In this case, with no new features, it is a patch change. (It is debatable whether it is even that, since it does not to my knowledge fix any bugs, but we'll let that slide.)
+
 ## 2.1.0
 
 *Release Date: 2021-Aug-18*
