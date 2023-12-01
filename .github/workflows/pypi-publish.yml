@@ -23,12 +23,7 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev libgdal-dev 
-
-      - name: Install, build and publish project
+      - name: Build and publish project
         env:
           TWINE_USERNAME: ${{ secrets.pcic_at_pypi_username }}
           TWINE_PASSWORD: ${{ secrets.pcic_at_pypi_password }}
