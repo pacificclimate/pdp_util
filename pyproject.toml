@@ -50,7 +50,7 @@ numpy = "<=1.21"  # Required by GDAL 3.0.4, but not declared in that package
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pycds = { version = "^4.4.0",  source = "pcic-pypi" }
+pycds = { version = "^4.5.0",  source = "pcic-pypi" }
 modelmeta = { version = "^1.0.1",  source = "pcic-pypi" }
 pydap-extras = { version = "^1.1.0",  source = "pcic-pypi" }
 Pydap = "^3.2.2"
