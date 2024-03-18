@@ -869,13 +869,13 @@ files = [
 
 [[package]]
 name = "paste"
-version = "3.7.1"
+version = "3.8.0"
 description = "Tools for using a Web Server Gateway Interface stack"
 optional = false
 python-versions = ">=3"
 files = [
-    {file = "Paste-3.7.1-py3-none-any.whl", hash = "sha256:7cad69ce824bbab0bca344328ff1b800eec8104de67a010b841ea16c4c104972"},
-    {file = "Paste-3.7.1.tar.gz", hash = "sha256:6d07a8e1c7fa72b8cf403762a002f80d12c0384056956dd0a87cb9a3be64749a"},
+    {file = "Paste-3.8.0-py3-none-any.whl", hash = "sha256:72530dede8d996540ec32ed420e796d1d1edc47542f50e723f3b46109900eb5c"},
+    {file = "Paste-3.8.0.tar.gz", hash = "sha256:9c6cc18f2f9b8e8e57c0a5228c957ec3beeefdeeb9ab93c85876b513e4babdaf"},
 ]
 
 [package.dependencies]
@@ -1101,13 +1101,13 @@ tests = ["WebTest", "beautifulsoup4", "flake8", "pyopenssl", "pytest (>=3.6)", "
 
 [[package]]
 name = "pydap-extras"
-version = "1.1.0"
+version = "1.1.1"
 description = "PCIC Pydap handlers and Responses for Python 3"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "pydap_extras-1.1.0-py3-none-any.whl", hash = "sha256:dad0a4febc8cfc0c16e812bec7ffd38b5b86aa7598d8f1ec37ab66a88f7a39e1"},
-    {file = "pydap_extras-1.1.0.tar.gz", hash = "sha256:dfc09f789fa6976a07fb23f3cf6cb8e1dc6f640fe50aa9f6d1c720ac93c42e9b"},
+    {file = "pydap_extras-1.1.1-py3-none-any.whl", hash = "sha256:7dcf9ecac4167e8e9f641e67958ef27990dae3c68889ac36850983fdefb82e60"},
+    {file = "pydap_extras-1.1.1.tar.gz", hash = "sha256:84f4f4f5571b8bd8435a2b4857dd78213779051fe0b0ea9b175dbdb1908c738d"},
 ]
 
 [package.dependencies]
@@ -1633,4 +1633,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "626fadeb236ce2b8a612e77f4c38eb34a73ca6478575c4f8c948537824d6cb13"
+content-hash = "db48d5458d2764ceb220b859deb8768394c1a1cb775b7b72bffd5efdb975296a"
