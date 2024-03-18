@@ -2,12 +2,17 @@ import datetime
 import importlib
 import logging
 import json
-from collections import OrderedDict
 
 import alembic
 import alembic.config
 import alembic.command
-from pycds import CrmpNetworkGeoserver, VarsPerHistory, CollapsedVariables
+from pycds import (
+    VarsPerHistory,
+    CollapsedVariables,
+    StationObservationStats,
+    ObsCountPerMonthHistory,
+    ClimoObsCount,
+)
 from pycds.context import get_standard_table_privileges
 from webob.request import Request
 
@@ -149,8 +154,11 @@ def test_session(schema_name, empty_session, pkg_file_root):
     with open(pkg_file_root("pycds") / "data" / "crmp_subset_data.sql", "r") as f:
         sql = f.read()
     empty_session.execute(sql)
-    empty_session.execute(CollapsedVariables.refresh())
     empty_session.execute(VarsPerHistory.refresh())
+    empty_session.execute(CollapsedVariables.refresh())
+    empty_session.execute(ClimoObsCount.refresh())
+    empty_session.execute(StationObservationStats.refresh())
+    empty_session.execute(ObsCountPerMonthHistory.refresh())
     empty_session.commit()
 
     logging.getLogger("sqlalchemy.engine").setLevel(
