@@ -9,7 +9,6 @@ from tempfile import SpooledTemporaryFile
 from webob.request import Request
 from paste.httpexceptions import HTTPBadRequest
 import numpy as np
-from sqlalchemy import or_, not_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import array
 
