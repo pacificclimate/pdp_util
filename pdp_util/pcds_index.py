@@ -48,7 +48,6 @@ class PcdsIndex(object):
             yield sesh
 
         with self.session_scope_factory() if not sesh else dummy_context() as sesh:
-
             params = self.args
             params.update(
                 {
@@ -94,9 +93,9 @@ class PcdsIsClimoIndex(PcdsIndex):
         :type long_name: str
         """
         defaults = {
-            "title": u"PCDS Data",
-            "short_name": u"Data type",
-            "long_name": u"Data type decription",
+            "title": "PCDS Data",
+            "short_name": "Data type",
+            "long_name": "Data type decription",
         }
         kwargs = dict(list(defaults.items()) + list(kwargs.items()))
         PcdsIndex.__init__(self, **kwargs)
@@ -169,7 +168,6 @@ class PcdsStationIndex(PcdsIndex):
         PcdsIndex.__init__(self, **kwargs)
 
     def get_elements(self, sesh):
-
         """Runs a database query and returns a list of (``native_id``,
         ``station_name``) pairs which are in the given PCDS network.
         """
