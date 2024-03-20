@@ -1,5 +1,4 @@
 from os.path import dirname
-from pkg_resources import resource_filename
 
 from webob.request import Request
 from bs4 import BeautifulSoup
@@ -15,10 +14,10 @@ def make_common_assertions(resp):
     assert resp.content_length is None
 
 
-def test_climo_index(conn_params, test_session):
+def test_climo_index(pkg_file_root, conn_params, test_session):
     app = PcdsIsClimoIndex(
         app_root="/",
-        templates=resource_filename("pdp_util", "templates"),
+        templates=str(pkg_file_root("pdp_util") / "templates"),
         conn_params=conn_params,
     )  # FIXME: template path is fragile
 
@@ -35,10 +34,10 @@ def test_climo_index(conn_params, test_session):
     assert "raw/" in str(resp.app_iter)
 
 
-def test_network_index(conn_params, test_session):
+def test_network_index(pkg_file_root, conn_params, test_session):
     app = PcdsNetworkIndex(
         app_root="/",
-        templates=resource_filename("pdp_util", "templates"),
+        templates=str(pkg_file_root("pdp_util") / "templates"),
         conn_params=conn_params,
         is_climo=False,
     )  # FIXME: template path is fragile
@@ -67,11 +66,11 @@ def test_network_index(conn_params, test_session):
     assert "Environment Canada (Canadian Daily Climate Data 2007)" in str(resp.app_iter)
 
 
-def test_station_index(conn_params, test_session):
+def test_station_index(pkg_file_root, conn_params, test_session):
 
     app = PcdsStationIndex(
         app_root="/",
-        templates=resource_filename("pdp_util", "templates"),
+        templates=str(pkg_file_root("pdp_util") / "templates"),
         conn_params=conn_params,
         is_climo=False,
         network="AGRI",
@@ -93,11 +92,11 @@ def test_station_index(conn_params, test_session):
     assert 'Deep "Climo Station" Creek' not in str(resp.app_iter)
 
 
-def test_station_index_for_climatologies(conn_params, test_session):
+def test_station_index_for_climatologies(pkg_file_root, conn_params, test_session):
 
     app = PcdsStationIndex(
         app_root="/",
-        templates=resource_filename("pdp_util", "templates"),
+        templates=str(pkg_file_root("pdp_util") / "templates"),
         conn_params=conn_params,
         is_climo=True,
         network="MoTIe",

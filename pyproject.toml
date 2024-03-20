@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "pdp-util"
+version = "2.1.2"
+description = "A package supplying numerous apps for running PCIC's data server"
+authors = [
+    "James Hiebert <hiebert@uvic.ca>",
+    "Rod Glover <@uvic.ca>",
+    "Lee Zeman <lzeman@uvic.ca>",
+    "Cairo Sanders <cairosanders@uvic.ca>",
+    "Nik Radoš",
+]
+readme = "README.rst"
+homepage = "http://www.pacificclimate.org/"
+repository = "https://github.com/pacificclimate/pdp_util"
+keywords = ["sql", "database", "opendap", "dods", "dap", "data", "science", "climate", "oceanography", "meteorology"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Internet",
+    "Topic :: Internet :: WWW/HTTP :: WSGI",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+packages = [
+    {include = "pdp_util"},
+]
+include = [
+    "pdp_util/data/alpha.png",
+    "pdp_util/data/*.css",
+    "pdp_util/templates/*.html",
+]
+
+[[tool.poetry.source]]
+name = "pcic-pypi"
+url = "https://pypi.pacificclimate.org/simple/"
+priority = "supplemental"
+
+[tool.poetry.group.initial.dependencies]
+# These dependencies must be installed before those in any other groups,
+# including the main dependencies.  This is required to install GDAL 3.0.4.
+pip = "22.3.1"
+setuptools = "<58"
+numpy = "<=1.21"  # Required by GDAL 3.0.4, but not declared in that package
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pycds = { version = "^4.4.0",  source = "pcic-pypi" }
+modelmeta = { version = "^1.0.1",  source = "pcic-pypi" }
+pydap-extras = { version = "^1.1.0",  source = "pcic-pypi" }
+Pydap = "^3.2.2"
+SQLAlchemy = "^1.4"
+pytz = "2018.9"
+simplejson = "^3.16.0"
+Beaker = "^1.10.0"
+Genshi = "0.7.5"
+Paste = "^3.7.1"
+Pillow = "5.4.1"
+WebOb = "1.8.7"
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=4.1.1"
+"testing.postgresql" = "*"
+
+[tool.poetry.group.black.dependencies]
+black = "23.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+markers = [
+    "online: marks tests that use an online resource (deselect with '-m \"not online\"')",
+    "slow: marks tests that are slow (deselect with '-m \"not slow\"')",
+]

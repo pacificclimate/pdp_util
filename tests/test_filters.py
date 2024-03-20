@@ -1,6 +1,8 @@
 from datetime import datetime
 from urllib.parse import urlencode
 
+from sqlalchemy.exc import CompileError
+
 from pdp_util.filters import form_filters, validate_vars
 from pycds import CrmpNetworkGeoserver as cng
 
@@ -16,7 +18,12 @@ def render(expression):
     # Use PostgreSQL dialect.
     return str(
         expression.compile(
-            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+            dialect=postgresql.dialect(),
+            # TODO: Binding datetime literals causes an error in late versions of
+            #   SQLAlchemy 1.4 :( . When we progress to a version that supports this
+            #   (2.0 already does), restore the literal bindings. This only affects
+            #   one test at the present time.
+            # compile_kwargs={"literal_binds": True},
         )
     )
 

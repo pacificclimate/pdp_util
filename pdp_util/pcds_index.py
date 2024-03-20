@@ -136,8 +136,9 @@ class PcdsNetworkIndex(PcdsIndex):
         # associated with that table
         query = (
             sesh.query(Network.name, Network.long_name)
-            .join(Variable)
-            .join(VarsPerHistory)
+            .select_from(Network)
+            .join(Variable, Variable.network_id == Network.id)
+            .join(VarsPerHistory, VarsPerHistory.vars_id == Variable.id)
             .distinct()
             .order_by(Network.name)
         )
@@ -176,41 +177,24 @@ class PcdsStationIndex(PcdsIndex):
         # Join to vars_per_history to make sure data exists for each
         # station, but don't actually return anything associated with
         # that table
+        query = (
+            sesh.query(Station.native_id, History.station_name)
+            .select_from(Network)
+            .join(Station, Station.network_id == Network.id)
+            .join(History, History.station_id == Station.id)
+            .join(VarsPerHistory, VarsPerHistory.history_id == History.id)
+            .join(Variable, Variable.id == VarsPerHistory.vars_id)
+            # .join(Variable, Variable.network_id == Network.id)
+            .filter(Network.name == network_name)
+            .distinct()
+            .order_by(Station.native_id)
+        )
+        climo_filter = or_(
+            Variable.cell_method.contains("within"),
+            Variable.cell_method.contains("over"), )
         if self.args["is_climo"]:
-            query = (
-                sesh.query(Station.native_id, History.station_name)
-                .join(History)
-                .join(Network)
-                .join(VarsPerHistory)
-                .join(Variable)
-                .filter(Network.name == network_name)
-                .filter(
-                    or_(
-                        Variable.cell_method.contains("within"),
-                        Variable.cell_method.contains("over"),
-                    )
-                )
-                .distinct()
-                .order_by(Station.native_id)
-            )
+            query = query.filter(climo_filter)
         else:
-            query = (
-                sesh.query(Station.native_id, History.station_name)
-                .join(History)
-                .join(Network)
-                .join(VarsPerHistory)
-                .join(Variable)
-                .filter(Network.name == network_name)
-                .filter(
-                    not_(
-                        or_(
-                            Variable.cell_method.contains("within"),
-                            Variable.cell_method.contains("over"),
-                        )
-                    )
-                )
-                .distinct()
-                .order_by(Station.native_id)
-            )
+            query = query.filter(not_(climo_filter))
 
         return query.all()

@@ -4,48 +4,69 @@ on: push
 
 jobs:
   test:
+    runs-on: ubuntu-22.04
 
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version:
+          # At present, only 3.8 is supported.
+          - "3.8"
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install pipenv
-      run: |
-        pip install -U pipenv==2022.1.8
-    - id: cache-pipenv
-      uses: actions/cache@v2
-      with:
-        path: ~/.local/share/virtualenvs
-        key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
-    - name: Install system dependencies
-      run: |
-        sudo apt-get install -y curl ca-certificates gnupg
-        sudo curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        sudo echo 'deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list
-        sudo apt-get update
-        sudo apt purge postgresql-client-13 postgresql-server-dev-all
-        sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev postgresql-14-postgis-3
-    - name: Install dependencies from lockfile for python 3.8
-      if: steps.cache-pipenv.output.cache-hit != 'true' && ${{ matrix.python-version == '3.8' }}
-      run: |
-        pipenv install --dev
-    - name: Install dependencies for python != 3.8
-      if: ${{ matrix.python-version != '3.8' }}
-      run: |
-        mv Pipfile.lock do-not-use
-        pipenv install --python ${{ matrix.python-version }} --dev
-    - name: Test with pytest (full)
-      if: github.ref == 'refs/heads/master'
-      run: |
-        pipenv run py.test -m "not online" -v --tb=short tests
-    - name: Test with pytest (fast)
-      if: github.ref != 'refs/heads/master'
-      run: |
-        pipenv run py.test -m "not online and not slow" -v --tb=short tests
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        # ubuntu-22.04 has the following postgres packages by default:
+        # postgresql-14/now 14.8-1.pgdg22.04+1 amd64 [installed,local]
+        # postgresql-client-14/now 14.8-1.pgdg22.04+1 amd64 [installed,local]
+        # postgresql-client-common/now 250.pgdg22.04+1 all [installed,local]
+        # postgresql-common/now 250.pgdg22.04+1 all [installed,local]
+        #
+        # postgresql-14-postgis-3 requires a different version, as installed
+        # below. However, the version required is periodically updated, and the
+        # previous version becomes unavailable. To discover what version is
+        # required, comment out the indicated line, read the error message, and
+        # update the installation as indicated.
+        run: |
+          sudo apt list --installed | grep postgres
+          sudo apt-get update
+          echo "downgrading postgresql-14"
+          # The version of postgresql-14 may periodically require updating. See above.
+          sudo apt-get install -yq --allow-downgrades postgresql-14=14.9-0ubuntu0.22.04.1
+          echo "installing postgresql-14-postgis-3"
+          sudo apt-get install -yq postgresql-14-postgis-3
+          echo "installing postgresql-plpython3-14"
+          sudo apt-get install -yq postgresql-plpython3-14
+          # Install remaining dependencies
+          sudo apt-get install libhdf5-serial-dev libnetcdf-dev libspatialite-dev libgdal-dev
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      # Installing this project is tricky, due to its dependency on GDAL 3.0.4.
+      # For an explanation, see the README.
+      - name: Install project
+        run: |
+          # Pre-install initial packages (pip, setuptools, numpy) 
+          poetry install --only initial
+          # Install gdal using pip3 into the Poetry virtualenv
+          poetry run pip3 install gdal==3.0.4
+          # Install rest of project          
+          poetry install --without black
+
+      - name: Test with pytest (full)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          poetry run pytest -m "not online" -v --tb=short tests
+
+      - name: Test with pytest (fast)
+        if: github.ref != 'refs/heads/master'
+        run: |
+          poetry run pytest -m "not online and not slow" -v --tb=short tests

@@ -1,8 +1,7 @@
-from pkg_resources import resource_filename
 
 from pdp_util.pcds_dispatch import PcdsDispatcher
 from pydap_extras.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
-from pycds.util import sql_station_table
+# from pycds.util import sql_station_table
 
 import pytest
 from webob.request import Request
@@ -16,12 +15,12 @@ def make_common_assertions(resp):
         assert resp.content_length > 0
 
 
-@pytest.fixture(scope="function")
-def the_app(conn_params):
+@pytest.fixture(scope="function")  # TODO: Broaden scope?
+def the_app(conn_params, pkg_file_root):
     kwargs = {
         "pydap_root": "/tmp/",
         "app_root": "/",
-        "templates": resource_filename("pdp_util", "templates"),
+        "templates": str(pkg_file_root("pdp_util") / "templates"),
         "ol_path": "",
         "conn_params": conn_params,
     }
@@ -103,15 +102,13 @@ def test_bad_network(the_app, test_session):
 @pytest.mark.parametrize("url", ["/raw/EC/1106200/", "/raw/EC/1106200"])
 def dont_test_station_listing(the_app, test_session, url, monkeypatch):
     def my_get_full_query(self, stn_id, sesh):
-        return sql_station_table(test_session, stn_id)
+        return
 
     monkeypatch.setattr(RawPcicSqlHandler, "get_full_query", my_get_full_query)
 
     req = Request.blank(url)
     resp = req.get_response(the_app)
     make_common_assertions(resp)
-
-    soup = BeautifulSoup(resp.body, features="html.parser")
 
 
 def test_dispatch_to_station_listing(the_app, test_session):

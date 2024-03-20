@@ -247,12 +247,13 @@ def build_orca_url(handlers, orca_root, req):
     1. [orca_root]/?filepath=[filepath]
     2. [orca_root]/?filepath=[filepath]&targets=time[time_start:time_end],lat[lat_start:lat_end],lon[lon_start:lon_end],[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
 
-    where the [filepath] can be attained by the mapping of handler url to handler file from a config dict
+    where the [filepath] can be obtained by the mapping of handler url to handler file
+    from a config dict
     """
-    filename = None
+    filepath = None
     for handler in handlers:
         if handler["url"] == req.path_info[:-3]:
-            filename = handler["file"]
+            filepath = handler["file"]
             break
         elif handler["url"] == req.path_info[:-3].strip("/."):
             filename = handler["file"].strip("/,")
@@ -321,7 +322,10 @@ def get_filepath_from_handlers(handlers, filename):
 
 
 def db_raster_catalog(session, ensemble, root_url):
-    """A function which queries the database for all of the raster files belonging to a given ensemble. Returns a dict where keys are the dataset unique ids and the value is the filename for the dataset.
+    """
+    A function which queries the database for all raster files belonging to a given
+    ensemble. Returns a dict where keys are the dataset unique ids and the value is
+    the filename for the dataset.
 
     :param session: SQLAlchemy session for the pcic_meta database
     :param ensemble: Name of the ensemble for which member files should be listed
