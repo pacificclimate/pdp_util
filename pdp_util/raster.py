@@ -86,7 +86,7 @@ class RasterServer(object):
                 charset="utf-8",
             )
             return res(environ, start_response)
-        elif req.path_info.split(".")[-1] != "nc":
+        elif not req.path_info.split(".")[-1].endswith("nc"):
             url = build_metadata_url(
                 self.config["handlers"], self.config["orca_root"], req
             )
@@ -251,7 +251,6 @@ def build_orca_url(handlers, orca_root, req):
     """
     filename = None
     for handler in handlers:
-        # print("handler url: {} path_info: {}".format(handler["url"], req.path_info[:-3]))
         if handler["url"] == req.path_info[:-3]:
             filename = handler["file"]
             break
@@ -268,7 +267,13 @@ def build_orca_url(handlers, orca_root, req):
 
 def get_target_dims(var):
     """Adds the dimensions with the bounds matching the data variable to the targets
-    for orca data requests."""
+    for orca data requests.
+    
+    The "split_bounds" variable refers to a list of the ranges for each dimension.
+    E.g. if the data variable is given by "tasmin[0:1][0:5][0:10]", then "split_bounds" is
+    [[0:1], [0:5], [0:10]]. This variable is used to ensure that the orca request has each dimension
+    match with its respective bounds, so that the value of "target_dims" in this case is "time[0:1],lat[0:5],lon[0:10]".
+    """
     try:
         bounds = var[var.index("[") :]
     except ValueError:  # Get full range of data variable
