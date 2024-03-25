@@ -10,7 +10,7 @@ from pycds import Network, Station, CrmpNetworkGeoserver
 def get_stn_list(
     sesh,
     sql_constraints,
-    to_select=[CrmpNetworkGeoserver.network_name, CrmpNetworkGeoserver.native_id]
+    to_select=[CrmpNetworkGeoserver.network_name, CrmpNetworkGeoserver.native_id],
 ):
     """Translate station filters into a list of stations
 

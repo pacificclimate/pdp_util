@@ -74,7 +74,6 @@ class CountRecordLengthApp(object):
             yield sesh
 
         with self.session_scope_factory() if not sesh else dummy_context() as sesh:
-
             counts = get_counts(sesh, filters, sdate, edate)
 
         status = "200 OK"

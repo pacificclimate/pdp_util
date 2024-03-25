@@ -70,7 +70,7 @@ def test_can_instantiate_filters():
         ),
         (
             {"only-with-climatology": "only-with-climatology"},
-            [or_(cng.vars.like("%within%"), cng.vars.like("%over%"))],
+            [cng.unique_variable_tags.contains(postgresql.array(["climatology"]))],
         ),
         # Invalid values for each filter, singly
         ({"from-date": "2000/Jan/01"}, []),
@@ -94,7 +94,7 @@ def test_can_instantiate_filters():
             },
             [
                 cng.freq.in_(["irregular"]),
-                or_(cng.vars.like("%within%"), cng.vars.like("%over%")),
+                cng.unique_variable_tags.contains(postgresql.array(["climatology"])),
                 cng.max_obs_time > datetime(1890, 12, 25),
             ],
         ),

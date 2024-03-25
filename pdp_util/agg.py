@@ -9,12 +9,12 @@ from tempfile import SpooledTemporaryFile
 from webob.request import Request
 from paste.httpexceptions import HTTPBadRequest
 import numpy as np
-from sqlalchemy import or_, not_
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.postgresql import array
 
 from pdp_util.util import get_stn_list
 from pdp_util.filters import validate_vars
-from pycds import Variable, Network
+from pycds import Variable, Network, variable_tags
 from pydap_extras.handlers.pcic import RawPcicSqlHandler, ClimoPcicSqlHandler
 from pydap_extras.handlers.sql import Engines
 from pydap.model import DatasetType, SequenceType, BaseType
@@ -78,7 +78,7 @@ def ziperator(responders):
     :param responders: A list of (``name``, ``generator``) pairs where ``name`` is the filename to use in the zip archive and ``generator`` should yield all bytes for a single file.
     :rtype: iterator
     """
-    with SpooledTemporaryFile(1024 ** 3) as f:
+    with SpooledTemporaryFile(1024**3) as f:
         yield b"PK"  # Response headers aren't sent until the first chunk of data is sent.  Let's get this repsonse moving!
         z = ZipFile(f, "w", ZIP_DEFLATED)
 
@@ -117,23 +117,15 @@ def metadata_index_responder(sesh, network, climo=False):
     :rtype: generator
     """
     maxlen = 256
-    if climo:
-        climo_filt = or_(
-            Variable.cell_method.like("%within%"), Variable.cell_method.like("%over%")
-        )
-    else:
-        climo_filt = not_(
-            or_(
-                Variable.cell_method.like("%within%"),
-                Variable.cell_method.like("%over%"),
-            )
-        )
-
     rv = (
         sesh.query(Variable)
         .join(Network)
         .filter(Network.name == network)
-        .filter(climo_filt)
+        .filter(
+            variable_tags(Variable).contains(
+                array(["climatology" if climo else "observation"])
+            )
+        )
     )
     a = np.array(
         [(var.name, var.standard_name, var.cell_method, var.unit) for var in rv],
