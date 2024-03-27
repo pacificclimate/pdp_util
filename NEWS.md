@@ -1,5 +1,12 @@
 # News / Release Notes
 
+## 2.1.3
+
+*Release Date: 2024-Mar-27*
+
+Changes:
+- [Fix method to discriminate climatological variables](https://github.com/pacificclimate/pdp_util/pull/55)
+
 ## 2.1.2
 
 *Release Date: 2023-Dec-01*
