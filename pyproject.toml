@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pdp-util"
-version = "2.1.2"
+version = "2.1.3"
 description = "A package supplying numerous apps for running PCIC's data server"
 authors = [
     "James Hiebert <hiebert@uvic.ca>",
@@ -50,9 +50,9 @@ numpy = "<=1.21"  # Required by GDAL 3.0.4, but not declared in that package
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pycds = { version = "^4.4.0",  source = "pcic-pypi" }
+pycds = { version = "^4.5.0",  source = "pcic-pypi" }
 modelmeta = { version = "^1.0.1",  source = "pcic-pypi" }
-pydap-extras = { version = "^1.1.0",  source = "pcic-pypi" }
+pydap-extras = { version = "^1.1.1",  source = "pcic-pypi" }
 Pydap = "^3.2.2"
 SQLAlchemy = "^1.4"
 pytz = "2018.9"

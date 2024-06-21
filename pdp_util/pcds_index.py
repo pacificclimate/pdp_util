@@ -2,10 +2,11 @@ from contextlib import contextmanager
 
 from genshi.template import TemplateLoader
 from sqlalchemy import or_, not_
+from sqlalchemy.dialects.postgresql import array
 
 import pydap.lib
 from pdp_util import session_scope
-from pycds import Network, Variable, VarsPerHistory, Station, History
+from pycds import Network, Variable, VarsPerHistory, Station, History, variable_tags
 
 
 class PcdsIndex(object):
@@ -47,7 +48,6 @@ class PcdsIndex(object):
             yield sesh
 
         with self.session_scope_factory() if not sesh else dummy_context() as sesh:
-
             params = self.args
             params.update(
                 {
@@ -168,7 +168,6 @@ class PcdsStationIndex(PcdsIndex):
         PcdsIndex.__init__(self, **kwargs)
 
     def get_elements(self, sesh):
-
         """Runs a database query and returns a list of (``native_id``,
         ``station_name``) pairs which are in the given PCDS network.
         """
@@ -188,13 +187,11 @@ class PcdsStationIndex(PcdsIndex):
             .filter(Network.name == network_name)
             .distinct()
             .order_by(Station.native_id)
+            .filter(
+                variable_tags(Variable).contains(
+                    array(["climatology" if self.args["is_climo"] else "observation"])
+                )
+            )
         )
-        climo_filter = or_(
-            Variable.cell_method.contains("within"),
-            Variable.cell_method.contains("over"), )
-        if self.args["is_climo"]:
-            query = query.filter(climo_filter)
-        else:
-            query = query.filter(not_(climo_filter))
 
         return query.all()

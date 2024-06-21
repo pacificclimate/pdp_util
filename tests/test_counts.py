@@ -2,20 +2,109 @@ from urllib.parse import urlencode
 from datetime import datetime
 
 import pytest
+from sqlalchemy.dialects import postgresql
+from pycds import CrmpNetworkGeoserver
 from webob.request import Request
 import json
 
 from pdp_util.counts import CountStationsApp, CountRecordLengthApp
 
 
+def cng_query(
+    sesh,
+    title="foo",
+    filts=tuple(),
+    cols=("station_id", "network_name", "native_id"),
+):
+    q = sesh.query(CrmpNetworkGeoserver).order_by(
+        CrmpNetworkGeoserver.network_name, CrmpNetworkGeoserver.native_id
+    )
+    for f in filts:
+        q = q.filter(f)
+    rows = q.all()
+
+    print()
+    print(f"### cng: {title}; count {len(rows)}")
+    print(cols)
+    for row in rows:
+        print(*(getattr(row, col) for col in cols))
+
+
+@pytest.mark.skip
+def test_database_contents(test_session):
+    """Test the test_session database contents directly, for comparison against
+    the results of CountStationsApp"""
+    cng_query(
+        test_session,
+        title="all",
+        cols=(
+            "station_id",
+            "network_name",
+            "native_id",
+            "min_obs_time",
+            "max_obs_time",
+            "unique_variable_tags",
+        ),
+    )
+    cng_query(
+        test_session,
+        title="network-name == EC_raw",
+        filts=(CrmpNetworkGeoserver.network_name == "EC_raw",),
+        cols=("station_id", "network_name", "native_id"),
+    )
+    cng_query(
+        test_session,
+        title="from-date 2000/01/01, to-date 2000/01/31",
+        filts=(
+            CrmpNetworkGeoserver.max_obs_time > datetime(2000, 1, 1),
+            CrmpNetworkGeoserver.min_obs_time < datetime(2000, 1, 31),
+        ),
+        cols=(
+            "station_id",
+            "network_name",
+            "native_id",
+            "min_obs_time",
+            "max_obs_time",
+        ),
+    )
+    cng_query(
+        test_session,
+        title="to-date 1965/01/01",
+        filts=(CrmpNetworkGeoserver.min_obs_time < datetime(1965, 1, 1),),
+        cols=(
+            "station_id",
+            "network_name",
+            "native_id",
+            "min_obs_time",
+            "max_obs_time",
+        ),
+    )
+    cng_query(
+        test_session,
+        title="input-freq 1-hourly",
+        filts=(CrmpNetworkGeoserver.freq == "1-hourly",),
+        cols=("station_id", "network_name", "native_id", "freq"),
+    )
+    cng_query(
+        test_session,
+        title="only-with-climatology",
+        filts=(
+            CrmpNetworkGeoserver.unique_variable_tags.contains(
+                postgresql.array(["climatology"])
+            ),
+        ),
+        cols=("station_id", "network_name", "native_id", "unique_variable_tags"),
+    )
+
+
 @pytest.mark.parametrize(
     ("filters", "expected"),
     [
         ({"network-name": "EC_raw"}, 3),
-        ({"from-date": "2000/01/01", "to-date": "2000/01/31"}, 15),
-        ({"to-date": "1965/01/01"}, 5),
+        ({"from-date": "2000/01/01", "to-date": "2000/01/31"}, 11),
+        ({"to-date": "1965/01/01"}, 2),
         ({"input-freq": "1-hourly"}, 6),
-        ({"only-with-climatology": "only-with-climatology"}, 14),
+        ({"only-with-climatology": "only-with-climatology"}, 12),
         # We _should_ ignore a bad value for a filter (or return a HTTP BadRequest?)
         ({"only-with-climatology": "bad-value"}, 50),
         (

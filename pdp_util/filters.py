@@ -173,7 +173,7 @@ form_filters = {
     "only-with-climatology": FormFilter(
         "only-with-climatology",
         "only-with-climatology",
-        lambda x: or_(cng.vars.like("%within%"), cng.vars.like("%over%")),
+        lambda x: cng.unique_variable_tags.contains(postgresql.array(["climatology"])),
     ),
 }
 
