@@ -193,7 +193,6 @@ def test_raster_metadata_minmax_bad_params(
         ),
     ],
 )
-@pytest.mark.online
 @pytest.mark.parametrize(
     ("config"),
     [
@@ -292,7 +291,6 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
         ),
     ],
 )
-@pytest.mark.online
 @pytest.mark.parametrize(
     ("config"),
     [
