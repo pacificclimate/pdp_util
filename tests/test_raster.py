@@ -9,6 +9,7 @@ from pdp_util.raster import (
     db_raster_configurator,
     EnsembleCatalog,
     RasterServer,
+    get_target_dims,
 )
 from tempfile import NamedTemporaryFile
 from webob.response import Response
@@ -344,3 +345,15 @@ def test_RasterServer_orca_error(mm_database_dsn, config, environ):
 
     r = requests.get(resp.location, allow_redirects=True)
     assert "Server Error" in str(r.content)
+
+
+@pytest.mark.parametrize(
+    ("var", "expected_dims"),
+    [
+        ("tasmin[0:150][0:91][0:206]", "time[0:150],lat[0:91],lon[0:206],"),
+        ("tasmin", "time,lat,lon,"),
+    ],
+)
+def test_get_target_dims(var, expected_dims):
+    dims = get_target_dims(var)
+    assert dims == expected_dims

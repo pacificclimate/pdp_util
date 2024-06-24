@@ -284,11 +284,11 @@ def get_target_dims(var):
     match with its respective bounds, so that the value of "target_dims" in this case is "time[0:1],lat[0:5],lon[0:10]".
     """
     try:
-        bounds = var[var.index("[") :]
+        bounds = var[var.index("[") : -1]
     except ValueError:  # Get full range of data variable
         return "time,lat,lon,"
 
-    split_bounds = [bound + "]" for bound in bounds.split("]")][:-1]
+    split_bounds = [bound + "]" for bound in bounds.split("]")]
     target_dims = ""
     for dim, bnd in zip(["time", "lat", "lon"], split_bounds):
         if bnd == "[]":  # Get entire range of dimension
