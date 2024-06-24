@@ -264,7 +264,7 @@ def build_orca_url(handlers, orca_root, thredds_root, req):
             filepath = handler["file"]
             break
         elif handler["url"] == req.path_info[:-3].strip("/."):
-            filename = handler["file"].strip("/,")
+            filepath = handler["file"].strip("/,")
             break
 
     if req.query_string == "":
@@ -277,7 +277,7 @@ def build_orca_url(handlers, orca_root, thredds_root, req):
 def get_target_dims(var):
     """Adds the dimensions with the bounds matching the data variable to the targets
     for orca data requests.
-    
+
     The "split_bounds" variable refers to a list of the ranges for each dimension.
     E.g. if the data variable is given by "tasmin[0:1][0:5][0:10]", then "split_bounds" is
     [[0:1], [0:5], [0:10]]. This variable is used to ensure that the orca request has each dimension

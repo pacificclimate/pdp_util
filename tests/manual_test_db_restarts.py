@@ -22,6 +22,7 @@ from sqlalchemy.pool import Pool
 
 from pdp_util import get_session
 
+
 # These tests are specific to postgresql
 @pytest.fixture
 def test_dsn():
