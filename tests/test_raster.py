@@ -210,6 +210,7 @@ def test_raster_metadata_minmax_bad_params(
                 },
             ],
             "orca_root": "https://services.pacificclimate.org/dev/orca",
+            "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
         }
     ],
 )
@@ -304,6 +305,7 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
                 },
             ],
             "orca_root": "https://services.pacificclimate.org/dev/orca",
+            "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
         }
     ],
 )
@@ -335,6 +337,7 @@ def test_RasterServer_orca_metadata(mm_database_dsn, config, environ, expected):
                     {"url": "bad_path.nc", "file": "bad_file.nc"},
                 ],
                 "orca_root": "https://services.pacificclimate.org/dev/orca",
+                "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
             },
         )
     ],
