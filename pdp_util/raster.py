@@ -88,10 +88,18 @@ class RasterServer(object):
             return res(environ, start_response)
         elif not req.path_info.split(".")[-1].endswith("nc"):
             url = build_metadata_url(
-                self.config["handlers"], self.config["orca_root"], req
+                self.config["handlers"],
+                self.config["orca_root"],
+                self.config["thredds_root"],
+                req,
             )
         else:
-            url = build_orca_url(self.config["handlers"], self.config["orca_root"], req)
+            url = build_orca_url(
+                self.config["handlers"],
+                self.config["orca_root"],
+                self.config["thredds_root"],
+                req,
+            )
         return Response(status_code=301, location=url)
 
 
@@ -239,13 +247,13 @@ class RasterMetadata(object):
         return response_200(start_response, content)
 
 
-def build_orca_url(handlers, orca_root, req):
+def build_orca_url(handlers, orca_root, thredds_root, req):
     """orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
     to THREDDS into bite-sized chunks and then reasemmbles them for the user.
 
     Orca is available through a url with one of the formats:
-    1. [orca_root]/?filepath=[filepath]
-    2. [orca_root]/?filepath=[filepath]&targets=time[time_start:time_end],lat[lat_start:lat_end],lon[lon_start:lon_end],[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
+    1. [orca_root]/?filepath=[filepath]&thredds_base=[thredds_root]
+    2. [orca_root]/?filepath=[filepath]&thredds_base=[thredds_root]&targets=time[time_start:time_end],lat[lat_start:lat_end],lon[lon_start:lon_end],[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
 
     where the [filepath] can be obtained by the mapping of handler url to handler file
     from a config dict
@@ -260,10 +268,10 @@ def build_orca_url(handlers, orca_root, req):
             break
 
     if req.query_string == "":
-        return f"{orca_root}/?filepath={filename}"
+        return f"{orca_root}/?filepath={filepath}&thredds_base={thredds_root}&outfile={req.path_info.strip('/.')}"
     else:
         dims = get_target_dims(req.query_string.rstrip("&"))
-        return f"{orca_root}/?filepath={filename}&targets={dims}{req.query_string.rstrip('&')}&outfile={req.path_info.strip('/.')}"
+        return f"{orca_root}/?filepath={filepath}&thredds_base={thredds_root}&targets={dims}{req.query_string.rstrip('&')}&outfile={req.path_info.strip('/.')}"
 
 
 def get_target_dims(var):
@@ -290,16 +298,16 @@ def get_target_dims(var):
     return target_dims
 
 
-def build_metadata_url(handlers, orca_root, req):
+def build_metadata_url(handlers, orca_root, thredds_root, req):
     """Builds the URL for a metadata (non-netCDF data) request."""
     final_extension = req.path_info.split(".")[-1]
     filepath = get_filepath_from_handlers(
         handlers, remove_final_extension(req.path_info)
     )
-    if req.query_string != "":
-        return f"{orca_root}/?filepath={filepath}.{final_extension}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
+    if req.query_string == "":
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&thredds_base={thredds_root}&outfile={req.path_info.strip('/.')}"
     else:
-        return f"{orca_root}/?filepath={filepath}.{final_extension}&outfile={req.path_info.strip('/.')}"
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&thredds_base={thredds_root}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
 
 
 def remove_final_extension(filename):
