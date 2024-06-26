@@ -258,15 +258,7 @@ def build_orca_url(handlers, orca_root, thredds_root, req):
     where the [filepath] can be obtained by the mapping of handler url to handler file
     from a config dict
     """
-    filepath = None
-    for handler in handlers:
-        if handler["url"] == req.path_info[:-3]:
-            filepath = handler["file"]
-            break
-        elif handler["url"] == req.path_info[:-3].strip("/."):
-            filepath = handler["file"].strip("/,")
-            break
-
+    filepath = get_filepath_from_handlers(handlers, req.path_info[:-3])
     if req.query_string == "":
         return f"{orca_root}/?filepath={filepath}&thredds_base={thredds_root}&outfile={req.path_info.strip('/.')}"
     else:
