@@ -9,6 +9,7 @@ from pdp_util.raster import (
     db_raster_configurator,
     EnsembleCatalog,
     RasterServer,
+    get_target_dims,
 )
 from tempfile import NamedTemporaryFile
 from webob.response import Response
@@ -193,7 +194,6 @@ def test_raster_metadata_minmax_bad_params(
         ),
     ],
 )
-@pytest.mark.online
 @pytest.mark.parametrize(
     ("config"),
     [
@@ -209,7 +209,8 @@ def test_raster_metadata_minmax_bad_params(
                     "file": "/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/pr_day_BCCAQv2+ANUSPLIN300_NorESM1-ME_historical+rcp85_r1i1p1_19500101-21001231.nc",
                 },
             ],
-            "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+            "orca_root": "https://services.pacificclimate.org/dev/orca",
+            "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
         }
     ],
 )
@@ -231,6 +232,98 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
 
 @pytest.mark.online
 @pytest.mark.parametrize(
+    ("environ", "expected"),
+    [
+        (
+            {
+                "PATH_INFO": "tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.das",
+            },
+            """Attributes {
+    lon {
+        String units "degrees_east";
+        String standard_name "longitude";
+        String long_name "longitude";
+        String axis "X";
+        Int32 _ChunkSizes 1068;
+    }
+    lat {
+        String units "degrees_north";
+        String standard_name "latitude";
+        String long_name "latitude";
+        String axis "Y";
+        Int32 _ChunkSizes 510;
+    }
+    time {
+        String calendar "365_day";
+        String long_name "Time";
+        String standard_name "Time";
+        String units "days since 1950-01-01";
+        Int32 _ChunkSizes 55115;
+    }
+    tasmin {
+        String units "degC";
+        Int16 _FillValue 32767;
+        Float64 add_offset 0.001525902;
+        Float64 scale_factor 0.003051804;
+        String standard_name "air_temperature";
+        String long_name "Daily Minimum Near-Surface Air Temperature";
+        Float64 missing_value 32767.0;
+        String cell_methods "time: minimum";
+        Int32 _ChunkSizes 2205, 20, 43;
+    }""",
+        ),
+        (
+            {
+                "PATH_INFO": "tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc.dds",
+            },
+            """Dataset {
+    Float64 lon[lon = 1068];
+    Float64 lat[lat = 510];
+    Float64 time[time = 55115];
+    Grid {
+     ARRAY:
+        Int16 tasmin[time = 55115][lat = 510][lon = 1068];
+     MAPS:
+        Float64 time[time = 55115];
+        Float64 lat[lat = 510];
+        Float64 lon[lon = 1068];
+    } tasmin;
+} datasets/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/tasmin_day_BCCAQv2%2bANUSPLIN300_inmcm4_historical%2brcp85_r1i1p1_19500101-21001231.nc;
+""",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("config"),
+    [
+        {
+            "root_url": "http://tools.pacificclimate.org/dataportal/data/vic_gen1/",
+            "handlers": [
+                {
+                    "url": "tasmin_day_BCSD+ANUSPLIN300+GFDL-ESM2G_historical+rcp26_r1i1p1_19500101-21001231.nc",
+                    "file": "/storage/data/climate/downscale/BCCAQ2/bccaqv2_with_metadata/tasmin_day_BCCAQv2+ANUSPLIN300_inmcm4_historical+rcp85_r1i1p1_19500101-21001231.nc",
+                },
+            ],
+            "orca_root": "https://services.pacificclimate.org/dev/orca",
+            "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
+        }
+    ],
+)
+def test_RasterServer_orca_metadata(mm_database_dsn, config, environ, expected):
+    r_server = RasterServer(mm_database_dsn, config)
+    resp = r_server(environ, Response())
+
+    assert resp.status_code == 301
+
+    r = requests.get(resp.location, allow_redirects=True)
+    if environ["PATH_INFO"].endswith(".das"):
+        assert expected in r.content.decode("utf-8")
+    else:
+        assert expected == r.content.decode("utf-8")
+
+
+@pytest.mark.online
+@pytest.mark.parametrize(
     ("environ", "config"),
     [
         (
@@ -243,7 +336,8 @@ def test_RasterServer_orca(mm_database_dsn, config, environ, var):
                 "handlers": [
                     {"url": "bad_path.nc", "file": "bad_file.nc"},
                 ],
-                "thredds_root": "http://docker-dev03.pcic.uvic.ca:30333/data",
+                "orca_root": "https://services.pacificclimate.org/dev/orca",
+                "thredds_root": "https://marble-dev01.pcic.uvic.ca/twitcher/ows/proxy/thredds/dodsC/datasets",
             },
         )
     ],
@@ -254,3 +348,15 @@ def test_RasterServer_orca_error(mm_database_dsn, config, environ):
 
     r = requests.get(resp.location, allow_redirects=True)
     assert "Server Error" in str(r.content)
+
+
+@pytest.mark.parametrize(
+    ("var", "expected_dims"),
+    [
+        ("tasmin[0:150][0:91][0:206]", "time[0:150],lat[0:91],lon[0:206],"),
+        ("tasmin", "time,lat,lon,"),
+    ],
+)
+def test_get_target_dims(var, expected_dims):
+    dims = get_target_dims(var)
+    assert dims == expected_dims

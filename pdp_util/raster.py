@@ -76,6 +76,7 @@ class RasterServer(object):
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
+            # Return list of available files
             with session_scope(self.dsn) as sesh:
                 urls = db_raster_catalog(
                     sesh, self.config["ensemble"], self.config["root_url"]
@@ -86,12 +87,23 @@ class RasterServer(object):
                 charset="utf-8",
             )
             return res(environ, start_response)
-
-        else:
-            orca_url = build_orca_url(
-                self.config["handlers"], self.config["thredds_root"], req
+        elif not req.path_info.split(".")[-1].endswith("nc"):
+            # Return .dds, .das, or .ascii metadata
+            url = build_metadata_url(
+                self.config["handlers"],
+                self.config["orca_root"],
+                self.config["thredds_root"],
+                req,
             )
-            return Response(status_code=301, location=orca_url)
+        else:
+            # Return netCDF data
+            url = build_orca_url(
+                self.config["handlers"],
+                self.config["orca_root"],
+                self.config["thredds_root"],
+                req,
+            )
+        return Response(status_code=301, location=url)
 
 
 class RasterCatalog(RasterServer):
@@ -238,25 +250,78 @@ class RasterMetadata(object):
         return response_200(start_response, content)
 
 
-def build_orca_url(handlers, thredds_root, req):
-    """
-    orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP
-    requests to THREDDS into bite-sized chunks and then reasemmbles them for the user.
+def build_orca_url(handlers, orca_root, thredds_root, req):
+    """orca is the OPeNDAP Request Compiler Application which pulls apart large OPeNDAP requests
+    to THREDDS into bite-sized chunks and then reasemmbles them for the user.
 
-    Orca is available through a url with the format:
-    [thredds_root]/?filepath=[filepath]&targets=[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
+    Orca is available through a url with one of the formats:
+    1. [orca_root]/?filepath=[filepath]&thredds_base=[thredds_root]
+    2. [orca_root]/?filepath=[filepath]&thredds_base=[thredds_root]&targets=time[time_start:time_end],lat[lat_start:lat_end],lon[lon_start:lon_end],[variable][time_start:time_end][lat_start:lat_end][lon_start:lon_end]
 
     where the [filepath] can be obtained by the mapping of handler url to handler file
     from a config dict
     """
-    filepath = None
-    for handler in handlers:
-        if handler["url"] == req.path_info[:-3]:
-            filepath = handler["file"]
-            break
+    filepath = get_filepath_from_handlers(handlers, req.path_info[:-3])
+    if req.query_string == "":
+        return f"{orca_root}/?filepath={filepath}&thredds_base={thredds_root}&outfile={req.path_info.strip('/.')}"
+    else:
+        dims = get_target_dims(req.query_string.rstrip("&"))
+        return f"{orca_root}/?filepath={filepath}&thredds_base={thredds_root}&targets={dims}{req.query_string.rstrip('&')}&outfile={req.path_info.strip('/.')}"
 
-    # TODO: Handle not-found case (filepath == None)?
-    return f"{thredds_root}/?filepath={filepath}&targets={req.query_string[:-1]}"
+
+def get_target_dims(var):
+    """Adds the dimensions with the bounds matching the data variable to the targets
+    for orca data requests.
+
+    The "split_bounds" variable refers to a list of the ranges for each dimension.
+    E.g. if the data variable is given by "tasmin[0:1][0:5][0:10]", then "split_bounds" is
+    [[0:1], [0:5], [0:10]]. This variable is used to ensure that the orca request has each dimension
+    match with its respective bounds, so that the value of "target_dims" in this case is "time[0:1],lat[0:5],lon[0:10]".
+    """
+    try:
+        bounds = var[var.index("[") : -1]
+    except ValueError:  # Get full range of data variable
+        return "time,lat,lon,"
+
+    split_bounds = [bound + "]" for bound in bounds.split("]")]
+    target_dims = ""
+    for dim, bnd in zip(["time", "lat", "lon"], split_bounds):
+        if bnd == "[]":  # Get entire range of dimension
+            target_dims += dim + ","
+        else:
+            target_dims += dim + bnd + ","
+    return target_dims
+
+
+def build_metadata_url(handlers, orca_root, thredds_root, req):
+    """Builds the URL for a metadata (non-netCDF data) request."""
+    final_extension = req.path_info.split(".")[-1]
+    filepath = get_filepath_from_handlers(
+        handlers, remove_final_extension(req.path_info)
+    )
+    if req.query_string == "":
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&thredds_base={thredds_root}&outfile={req.path_info.strip('/.')}"
+    else:
+        return f"{orca_root}/?filepath={filepath}.{final_extension}&thredds_base={thredds_root}&targets={req.query_string}&outfile={req.path_info.strip('/.')}"
+
+
+def remove_final_extension(filename):
+    """Given a string containing one or more ., remove the last . and
+    everything after it. useful for parsing pyDAP or ORCA URLs, where
+    you typically have a filename, followed by a . and then the format you
+    want; test1.nc.das means you're requesting a .das describing test1.nc"""
+    return filename[0 : filename.rfind(".")] if "." in filename else filename
+
+
+def get_filepath_from_handlers(handlers, filename):
+    """THREDDS uses a full filepath to access data. Get the full filepath for a
+    give filename."""
+    for handler in handlers:
+        if handler["url"] == filename:
+            return handler["file"]
+        elif handler["url"] == filename.strip("/."):
+            return handler["file"].strip("/.")
+    raise Exception("filepath not found: {}".format(filename))
 
 
 def db_raster_catalog(session, ensemble, root_url):
