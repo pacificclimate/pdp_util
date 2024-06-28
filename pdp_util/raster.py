@@ -76,6 +76,7 @@ class RasterServer(object):
         req = Request(environ)
 
         if req.path_info == "/catalog.json":
+            # Return list of available files
             with session_scope(self.dsn) as sesh:
                 urls = db_raster_catalog(
                     sesh, self.config["ensemble"], self.config["root_url"]
@@ -87,6 +88,7 @@ class RasterServer(object):
             )
             return res(environ, start_response)
         elif not req.path_info.split(".")[-1].endswith("nc"):
+            # Return .dds, .das, or .ascii metadata
             url = build_metadata_url(
                 self.config["handlers"],
                 self.config["orca_root"],
@@ -94,6 +96,7 @@ class RasterServer(object):
                 req,
             )
         else:
+            # Return netCDF data
             url = build_orca_url(
                 self.config["handlers"],
                 self.config["orca_root"],
