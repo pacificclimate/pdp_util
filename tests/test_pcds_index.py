@@ -67,7 +67,6 @@ def test_network_index(pkg_file_root, conn_params, test_session):
 
 
 def test_station_index(pkg_file_root, conn_params, test_session):
-
     app = PcdsStationIndex(
         app_root="/",
         templates=str(pkg_file_root("pdp_util") / "templates"),
@@ -93,7 +92,6 @@ def test_station_index(pkg_file_root, conn_params, test_session):
 
 
 def test_station_index_for_climatologies(pkg_file_root, conn_params, test_session):
-
     app = PcdsStationIndex(
         app_root="/",
         templates=str(pkg_file_root("pdp_util") / "templates"),
