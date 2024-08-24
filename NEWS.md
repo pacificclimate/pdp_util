@@ -1,5 +1,13 @@
 # News / Release Notes
 
+## 3.0.0
+
+*Release Date: 2024-Aug-23*
+
+Changes:
+- [ Add handling for .DAS and .DDS calls](https://github.com/pacificclimate/pdp_util/pull/43)
+- [Update postgrsql-14 version in CI testing](https://github.com/pacificclimate/pdp_util/pull/58)
+
 ## 2.1.3
 
 *Release Date: 2024-Mar-27*
