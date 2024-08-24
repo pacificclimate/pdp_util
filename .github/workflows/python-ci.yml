@@ -40,7 +40,7 @@ jobs:
           # The version of postgresql-14 may periodically require updating. To find out what
           # it must be upgraded to, comment out the following line and read the error message
           # that results. For more info, see above. (This is a grim procedure.)
-          sudo apt-get install -yq --allow-downgrades postgresql-14=14.12-0ubuntu0.22.04.1
+          sudo apt-get install -yq --allow-downgrades postgresql-14=14.13-0ubuntu0.22.04.1
           echo "installing postgresql-14-postgis-3"
           sudo apt-get install -yq postgresql-14-postgis-3
           echo "installing postgresql-plpython3-14"
